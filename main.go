@@ -1,4 +1,4 @@
-// OEXPERIMENT=greenteagc GOOS=linux GOARCH=amd64 go build
+// OEXPERIMENT=greenteagc GOOS=linux GOARCH=amd64 go build -o cmd/backtrack
 package main
 
 import (
@@ -13,7 +13,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	rootCmd := &cobra.Command{
-		Use:   "backup-cli",
+		Use:   "backtrack",
 		Short: "文件备份和还原工具",
 	}
 
