@@ -1,0 +1,10 @@
+backup_paths:
+  - /path/to/dir1
+  - /path/to/file1.txt
+
+exclude_dirs:
+  - dir_name
+
+exclude_files:
+  - "*.log"
+  - "*.tmp"
