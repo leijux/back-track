@@ -1,4 +1,4 @@
-// OEXPERIMENT=greenteagc
+// OEXPERIMENT=greenteagc GOOS=linux GOARCH=amd64 go build
 package main
 
 import (
