@@ -43,7 +43,10 @@ type fileTask struct {
 	relPath string
 }
 
-var skippedFiles int64 // 跳过文件计数
+var (
+	skippedFiles atomic.Int64 // 跳过文件计数
+	skippedDirs  atomic.Int64 // 跳过文件夹计数
+)
 
 func backup(configPath, outputPath string) error {
 	cfg, configBytes, err := loadConfig(configPath)
@@ -109,8 +112,7 @@ func backup(configPath, outputPath string) error {
 				return err
 			}
 		} else {
-			if shouldExcludeFile(cfg, filepath.Base(path)) {
-				atomic.AddInt64(&skippedFiles, 1)
+			if shouldExcludeFile(cfg, info.Name()) {
 				continue
 			}
 			absPath, _ := filepath.Abs(path)
@@ -131,7 +133,7 @@ func backup(configPath, outputPath string) error {
 	}
 
 	fmt.Printf("\n备份完成: %s\n", outputPath)
-	fmt.Printf("跳过文件: %d 个\n", skippedFiles)
+	fmt.Printf("跳过文件: %d 个 跳过文件夹: %d 个\n", skippedFiles.Load(), skippedDirs.Load())
 	return nil
 }
 
@@ -140,13 +142,15 @@ func walkDirAndPushTasks(cfg *Config, dirPath string, tasks chan<- fileTask) err
 		if err != nil {
 			return err
 		}
+		// 目录被排除
 		if d.IsDir() && shouldExcludeDir(cfg, d.Name()) {
 			return filepath.SkipDir
 		}
+		// 文件被排除
 		if !d.IsDir() && shouldExcludeFile(cfg, d.Name()) {
-			atomic.AddInt64(&skippedFiles, 1)
 			return nil
 		}
+		// 处理文件
 		if !d.IsDir() {
 			rel, _ := filepath.Rel(dirPath, path)
 			relPath := filepath.Join(dataDirName, filepath.Base(dirPath), filepath.ToSlash(rel))
@@ -169,10 +173,19 @@ func countTotalFiles(cfg *Config) (int, error) {
 				if err != nil {
 					return err
 				}
-				if !d.IsDir() && !shouldExcludeFile(cfg, d.Name()) {
+				// 目录被排除
+				if d.IsDir() && shouldExcludeDir(cfg, d.Name()) {
+					skippedDirs.Add(1)
+					return filepath.SkipDir
+				}
+				// 文件被排除
+				if !d.IsDir() && shouldExcludeFile(cfg, d.Name()) {
+					skippedFiles.Add(1)
+					return nil
+				}
+				// 处理文件
+				if !d.IsDir() {
 					count++
-				} else if !d.IsDir() {
-					atomic.AddInt64(&skippedFiles, 1)
 				}
 				return nil
 			})
@@ -183,7 +196,7 @@ func countTotalFiles(cfg *Config) (int, error) {
 			if !shouldExcludeFile(cfg, info.Name()) {
 				count++
 			} else {
-				atomic.AddInt64(&skippedFiles, 1)
+				skippedFiles.Add(1)
 			}
 		}
 	}
