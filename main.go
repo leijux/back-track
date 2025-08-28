@@ -21,11 +21,9 @@ func main() {
 
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
 
-	restoreCmd.Flags().StringP("input", "i", "backup.zip", "备份文件路径")
+	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
 
 	rootCmd.AddCommand(backupCmd, restoreCmd)
 
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatalln(err)
-	}
+	rootCmd.Execute()
 }
