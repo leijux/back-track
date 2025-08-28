@@ -19,7 +19,13 @@ var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "执行还原",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		inputPath, _ := cmd.Flags().GetString("input")
+		inputPath, err := cmd.Flags().GetString("input")
+		if err != nil {
+			return err
+		}
+		if inputPath == "" {
+			return fmt.Errorf("备份文件路径不能为空")
+		}
 		return restore(inputPath)
 	},
 }
