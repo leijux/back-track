@@ -76,7 +76,7 @@ func backup(configPath, outputPath string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("共 %d 个文件待备份\n", totalFiles)
+	fmt.Printf("共 %d 个文件待备份\n", totalFiles)
 
 	// 初始化进度条
 	bar := progressbar.Default(int64(totalFiles))
@@ -132,8 +132,8 @@ func backup(configPath, outputPath string) error {
 		return err
 	}
 
-	fmt.Printf("\n备份完成: %s\n", outputPath)
-	fmt.Printf("跳过文件: %d 个 跳过文件夹: %d 个\n", skippedFiles.Load(), skippedDirs.Load())
+	fmt.Printf("\n备份完成: %s ", outputPath)
+	fmt.Printf("跳过 %d个文件 %d个文件夹\n", skippedFiles.Load(), skippedDirs.Load())
 	return nil
 }
 
