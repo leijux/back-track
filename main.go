@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -11,9 +12,11 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	debugInfo, _ := debug.ReadBuildInfo()
 	rootCmd := &cobra.Command{
-		Use:   "backtrack",
-		Short: "文件备份和还原工具",
+		Use:     "backtrack",
+		Short:   "文件备份和还原工具",
+		Version: debugInfo.Main.Version,
 	}
 
 	rootCmd.PersistentFlags().StringP("config", "c", "config.yaml", "配置文件路径")
