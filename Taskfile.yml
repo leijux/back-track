@@ -16,7 +16,7 @@ tasks:
       GOARCH: amd64
     cmds:
       - echo "Building the project for Linux..."
-      - go build -o cmd/backtrack
+      - go build -trimpath -ldflags="-s -w" -o cmd/backtrack
 
   build_mac:
     env:
@@ -24,4 +24,4 @@ tasks:
       GOARCH: arm64
     cmds:
       - echo "Building the project for macOS..."
-      - go build -o cmd/backtrack_macos
+      - go build -trimpath -ldflags="-s -w" -o cmd/backtrack_macos
