@@ -1,0 +1,27 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  build:
+    env:
+      OEXPERIMENT: greenteagc
+    cmds:
+      - task: build_linux
+      - task: build_mac
+
+  build_linux:
+    env:
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+      - echo "Building the project for Linux..."
+      - go build -o cmd/backtrack
+
+  build_mac:
+    env:
+      GOOS: darwin
+      GOARCH: arm64
+    cmds:
+      - echo "Building the project for macOS..."
+      - go build -o cmd/backtrack_macos
