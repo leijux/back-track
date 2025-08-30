@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -62,6 +63,11 @@ func backup(configPath, outputPath string) error {
 
 	zipWriter := zip.NewWriter(outFile)
 	defer zipWriter.Close()
+
+	// 使用更高效的压缩算法
+	zipWriter.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(w, flate.BestCompression)
+	})
 
 	var mu sync.Mutex // zip写入锁
 	fileMap := make(FileMap)
