@@ -1,13 +1,18 @@
+# backtrack 配置文件示例
+# 备份路径列表（支持文件和目录）
 backup_paths:
-  - /path/to/dir1
-  - /path/to/file1.txt
+  - /path/to/dir1      # 备份整个目录
+  - /path/to/file1.txt # 备份单个文件
 
+# 排除的目录名称（精确匹配）
 exclude_dirs:
-  - dir_name
+  - dir_name           # 排除名为 dir_name 的目录
 
+# 排除的文件模式（支持通配符）
 exclude_files:
-  - "*.log"
-  - "*.tmp"
+  - "*.log"            # 排除所有.log文件
+  - "*.tmp"            # 排除所有.tmp文件
 
+# 需要暂停的服务名称（systemd服务）
 service_names:
-  - my_service
+  - my_service         # 备份前暂停，备份后恢复
