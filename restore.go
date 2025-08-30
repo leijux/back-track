@@ -51,6 +51,17 @@ func restore(zipPath string) error {
 		return fmt.Errorf("备份文件缺少 file_map.yaml，无法还原")
 	}
 
+	// 暂停服务
+	if err := pauseServices(cfg.ServiceNames); err != nil {
+		return fmt.Errorf("暂停服务失败: %w", err)
+	}
+
+	defer func() {
+		if err := resumeServices(cfg.ServiceNames); err != nil {
+			log.Printf("恢复服务失败: %v", err)
+		}
+	}()
+
 	// 进度条
 	filesToRestore := []*zip.File{}
 	for _, f := range r.File {
@@ -93,7 +104,7 @@ func restore(zipPath string) error {
 	return nil
 }
 
-func readYAMLFromZip(files []*zip.File, filename string, out interface{}) error {
+func readYAMLFromZip(files []*zip.File, filename string, out any) error {
 	for _, f := range files {
 		if f.Name == filename {
 			rc, err := f.Open()

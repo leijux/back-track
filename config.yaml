@@ -8,3 +8,6 @@ exclude_dirs:
 exclude_files:
   - "*.log"
   - "*.tmp"
+
+service_names:
+  - my_service

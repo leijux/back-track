@@ -35,6 +35,7 @@ type Config struct {
 	BackupPaths  []string `yaml:"backup_paths"`
 	ExcludeDirs  []string `yaml:"exclude_dirs,omitempty"`
 	ExcludeFiles []string `yaml:"exclude_files,omitempty"`
+	ServiceNames []string `yaml:"service_names,omitempty"`
 }
 
 type FileMap map[string]string // key: 压缩包内路径, value: 原绝对路径
@@ -54,6 +55,17 @@ func backup(configPath, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("加载配置失败: %w", err)
 	}
+
+	// 暂停服务
+	if err := pauseServices(cfg.ServiceNames); err != nil {
+		return fmt.Errorf("暂停服务失败: %w", err)
+	}
+
+	defer func() {
+		if err := resumeServices(cfg.ServiceNames); err != nil {
+			log.Printf("恢复服务失败: %v", err)
+		}
+	}()
 
 	outFile, err := os.Create(outputPath)
 	if err != nil {
