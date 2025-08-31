@@ -2,6 +2,11 @@ module back-track
 
 go 1.25.0
 
+ignore (
+	./cmd
+	./testdata
+)
+
 require (
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
