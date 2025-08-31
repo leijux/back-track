@@ -9,8 +9,9 @@
 // - 压缩备份文件
 //
 // 使用方法：
-//  备份: backtrack backup -c config.yaml -o backup.zip
-//  还原: backtrack restore -i backup.zip
+//
+//	备份: backtrack backup -c config.yaml -o backup.zip
+//	还原: backtrack restore -i backup.zip
 //
 // 配置文件格式参考 config.yaml
 package main
@@ -18,6 +19,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime/debug"
 	"time"
 
@@ -26,6 +28,11 @@ import (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if os.Geteuid() != 0 {
+		log.Println("请以root权限运行")
+		return
+	}
 
 	debugInfo, _ := debug.ReadBuildInfo()
 	rootCmd := &cobra.Command{
