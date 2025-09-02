@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_restore(t *testing.T) {
 	type args struct {
@@ -21,7 +23,7 @@ func Test_restore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := restore(tt.args.zipPath); (err != nil) != tt.wantErr {
+			if err := restore(tt.args.zipPath, t.TempDir()); (err != nil) != tt.wantErr {
 				t.Errorf("restore() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
