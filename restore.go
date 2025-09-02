@@ -107,7 +107,6 @@ func restoreFilesConcurrently(filesToRestore []*zip.File, fileMap FileMap, bar *
 	sem := make(chan struct{}, runtime.NumCPU()) // 限制并发量
 
 	for _, f := range filesToRestore {
-		f := f // 避免闭包变量引用问题
 		targetPath, ok := fileMap[f.Name]
 		if !ok {
 			log.Printf("跳过未知文件: %s", f.Name)
