@@ -25,6 +25,10 @@ var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "执行备份",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := checkRoot(); err != nil {
+			return err
+		}
+
 		configPath, _ := cmd.Flags().GetString("config")
 		outputPath, _ := cmd.Flags().GetString("output")
 		return backup(configPath, outputPath)

@@ -19,6 +19,9 @@ var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "执行还原",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := checkRoot(); err != nil {
+			return err
+		}
 		inputPath, err := cmd.Flags().GetString("input")
 		if err != nil {
 			return err
