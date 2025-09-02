@@ -46,14 +46,8 @@ func restore(zipPath string) error {
 	}
 
 	// 暂停服务
-	if err := pauseServices(cfg.ServiceNames); err != nil {
-		return fmt.Errorf("暂停服务失败: %w", err)
-	}
-	defer func() {
-		if err := resumeServices(cfg.ServiceNames); err != nil {
-			log.Printf("恢复服务失败: %v", err)
-		}
-	}()
+	pauseServices(cfg.ServiceNames)
+	defer resumeServices(cfg.ServiceNames)
 
 	// 获取需要还原的文件列表
 	filesToRestore := getFilesToRestore(r.File)

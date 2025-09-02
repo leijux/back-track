@@ -23,18 +23,18 @@ func pauseService(serviceName string) error {
 	if err != nil {
 		return fmt.Errorf("暂停服务 %s 失败: %w", serviceName, err)
 	}
-	log.Printf("服务 %s 已暂停", serviceName)
 	return nil
 }
 
 // pauseServices 批量暂停服务
-func pauseServices(serviceNames []string) error {
+func pauseServices(serviceNames []string) {
 	for _, serviceName := range serviceNames {
 		if err := pauseService(serviceName); err != nil {
-			return fmt.Errorf("批量暂停服务失败: %w", err)
+			log.Printf("暂停服务 %s 失败: %v", serviceName, err)
+			continue
 		}
+		log.Printf("服务 %s 已暂停", serviceName)
 	}
-	return nil
 }
 
 // resumeService 恢复单个服务
@@ -43,16 +43,16 @@ func resumeService(serviceName string) error {
 	if err != nil {
 		return fmt.Errorf("恢复服务 %s 失败: %w", serviceName, err)
 	}
-	log.Printf("服务 %s 已恢复", serviceName)
 	return nil
 }
 
 // resumeServices 批量恢复服务
-func resumeServices(serviceNames []string) error {
+func resumeServices(serviceNames []string) {
 	for _, serviceName := range serviceNames {
 		if err := resumeService(serviceName); err != nil {
-			return fmt.Errorf("批量恢复服务失败: %w", err)
+			log.Printf("恢复服务 %s 失败: %v", serviceName, err)
+			continue
 		}
+		log.Printf("服务 %s 已恢复", serviceName)
 	}
-	return nil
 }
