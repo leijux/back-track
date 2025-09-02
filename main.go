@@ -42,6 +42,8 @@ func main() {
 
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
 
+	restoreCmd.Flags().StringP("rootDir", "r", "/", "还原根目录")
+
 	rootCmd.AddCommand(backupCmd, restoreCmd)
 
 	rootCmd.Execute()

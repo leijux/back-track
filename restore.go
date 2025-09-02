@@ -29,12 +29,14 @@ var restoreCmd = &cobra.Command{
 		if inputPath == "" {
 			return fmt.Errorf("备份文件路径不能为空")
 		}
-		return restore(inputPath)
+
+		rootDir, _ := cmd.Flags().GetString("rootDir")
+		return restore(inputPath, rootDir)
 	},
 }
 
 // restore 执行还原操作
-func restore(zipPath string) error {
+func restore(zipPath string, rootDir string) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -47,7 +49,10 @@ func restore(zipPath string) error {
 	if err != nil {
 		return err
 	}
-
+	// 设置根目录
+	for k := range fileMap {
+		fileMap[k] = filepath.Join(rootDir, fileMap[k])
+	}
 	// 暂停服务
 	pauseServices(cfg.ServiceNames)
 	defer resumeServices(cfg.ServiceNames)
