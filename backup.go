@@ -159,11 +159,9 @@ func startWorkers(zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
 	bar *progressbar.ProgressBar, tasks chan fileTask, wg *sync.WaitGroup, workerCount int) {
 
 	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			processFileTasks(zipWriter, mu, fileMap, bar, tasks)
-		}()
+		})
 	}
 }
 
