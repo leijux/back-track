@@ -36,24 +36,32 @@ func Test_backup(t *testing.T) {
 				t.Errorf("backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !compareFileHashes(outputPath, "testdata/output.zip") {
+			if !compareFileHashes(t, outputPath, "testdata/output.zip") {
 				t.Errorf("backup() output file hash mismatch")
 			}
 		})
 	}
 }
 
-func compareFileHashes(file1, file2 string) bool {
+func compareFileHashes(t *testing.T, file1, file2 string) bool {
+	t.Helper()
+
 	hash1, err := computeFileHash(file1)
 	if err != nil {
+		t.Error(err)
 		return false
 	}
 	hash2, err := computeFileHash(file2)
 	if err != nil {
+		t.Error(err)
 		return false
 	}
-
-	return hash1 == hash2
+	if hash1 != hash2 {
+		t.Logf("File1: %s, Hash: %s", file1, hash1)
+		t.Logf("File2: %s, Hash: %s", file2, hash2)
+		return false
+	}
+	return true
 }
 
 func computeFileHash(filePath string) (string, error) {
