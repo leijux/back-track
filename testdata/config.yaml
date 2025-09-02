@@ -1,0 +1,9 @@
+backup_paths:
+  - ./testdata/backup/data1
+  - ./testdata/backup/data3.txt
+
+exclude_dirs:
+  - data2
+
+exclude_files:
+  - data4.txt
