@@ -29,11 +29,6 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	if os.Geteuid() != 0 {
-		log.Println("请以root权限运行")
-		return
-	}
-
 	debugInfo, _ := debug.ReadBuildInfo()
 	rootCmd := &cobra.Command{
 		Use:     "backtrack",
@@ -50,4 +45,11 @@ func main() {
 	rootCmd.AddCommand(backupCmd, restoreCmd)
 
 	rootCmd.Execute()
+}
+
+func checkRoot() error {
+	if os.Geteuid() != 0 {
+		return fmt.Errorf("请以root权限运行")
+	}
+	return nil
 }
