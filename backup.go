@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -18,7 +19,6 @@ import (
 
 const (
 	dataDirName = "data"
-	workerCount = 4 // 并发worker数量
 )
 
 var backupCmd = &cobra.Command{
@@ -139,7 +139,7 @@ func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, file
 	var wg sync.WaitGroup
 
 	// 启动worker处理文件
-	startWorkers(zipWriter, mu, fileMap, bar, tasks, &wg, workerCount)
+	startWorkers(zipWriter, mu, fileMap, bar, tasks, &wg, runtime.NumCPU())
 
 	// 遍历备份路径并分发任务
 	if err := processBackupPaths(cfg, tasks); err != nil {
