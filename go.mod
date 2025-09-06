@@ -1,4 +1,4 @@
-module back-track
+module github.com/leijux/back-track
 
 go 1.25.0
 
