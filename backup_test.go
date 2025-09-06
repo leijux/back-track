@@ -37,7 +37,7 @@ func Test_backup(t *testing.T) {
 				t.Errorf("zipFilesAreEqual() error = %v", err)
 			}
 			if !equal {
-				t.Errorf("backup() output zip file content mismatch")
+				t.Errorf("backup() output zip file content mismatch: %v", err)
 			}
 		})
 	}
@@ -61,8 +61,13 @@ func zipFilesAreEqual(zip1, zip2 string) (bool, error) {
 		return false, nil
 	}
 
+	fMap := make(map[string]struct{}, len(f1.File))
 	for i := range f1.File {
-		if f1.File[i].Name != f2.File[i].Name {
+		fMap[f1.File[i].Name] = struct{}{}
+	}
+
+	for i := range f2.File {
+		if _, exists := fMap[f2.File[i].Name]; !exists {
 			return false, nil
 		}
 	}
