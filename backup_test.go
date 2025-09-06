@@ -33,8 +33,11 @@ func Test_backup(t *testing.T) {
 				t.Errorf("backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			equal, err := zipFilesAreEqual(outputPath, "testdata/output.zip")
+			if err != nil {
+				t.Errorf("zipFilesAreEqual() error = %v", err)
+			}
 			if !equal {
-				t.Errorf("backup() output zip file content mismatch: %v", err)
+				t.Errorf("backup() output zip file content mismatch")
 			}
 		})
 	}
