@@ -25,3 +25,8 @@ tasks:
     cmds:
       - echo "Building the project for macOS..."
       - go build -trimpath -ldflags="-s -w" -o cmd/backtrack_macos
+
+  test:
+    cmds:
+      - echo "Running tests..."
+      - go test ./...
