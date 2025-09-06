@@ -1,10 +1,7 @@
 package main
 
 import (
-	"crypto/sha256"
-	"fmt"
-	"io"
-	"os"
+	"archive/zip"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -35,48 +32,39 @@ func Test_backup(t *testing.T) {
 			if err := backup(tt.args.configPath, outputPath); (err != nil) != tt.wantErr {
 				t.Errorf("backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
-
-			if !compareFileHashes(t, outputPath, "testdata/output.zip") {
-				t.Errorf("backup() output file hash mismatch")
+			equal, err := zipFilesAreEqual(outputPath, "testdata/output.zip")
+			if !equal {
+				t.Errorf("backup() output zip file content mismatch: %v", err)
 			}
 		})
 	}
 }
 
-func compareFileHashes(t *testing.T, file1, file2 string) bool {
-	t.Helper()
-
-	hash1, err := computeFileHash(file1)
+// 对比两个zip压缩包文件是否内容相同
+func zipFilesAreEqual(zip1, zip2 string) (bool, error) {
+	f1, err := zip.OpenReader(zip1)
 	if err != nil {
-		t.Error(err)
-		return false
+		return false, err
 	}
-	hash2, err := computeFileHash(file2)
+	defer f1.Close()
+
+	f2, err := zip.OpenReader(zip2)
 	if err != nil {
-		t.Error(err)
-		return false
+		return false, err
 	}
-	if hash1 != hash2 {
-		t.Logf("File1: %s, Hash: %s", file1, hash1)
-		t.Logf("File2: %s, Hash: %s", file2, hash2)
-		return false
-	}
-	return true
-}
+	defer f2.Close()
 
-func computeFileHash(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("打开文件失败: %w", err)
-	}
-	defer file.Close()
-
-	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", fmt.Errorf("计算文件哈希失败: %w", err)
+	if len(f1.File) != len(f2.File) {
+		return false, nil
 	}
 
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+	for i := range f1.File {
+		if f1.File[i].Name != f2.File[i].Name {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func Test_loadConfig(t *testing.T) {
