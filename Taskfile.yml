@@ -7,16 +7,24 @@ tasks:
     env:
       OEXPERIMENT: greenteagc
     cmds:
-      - task: build_linux
-      - task: build_mac
+      - task: build_linux_amd64
+      - task: build_linux_arm64
 
-  build_linux:
+  build_linux_amd64:
     env:
       GOOS: linux
       GOARCH: amd64
     cmds:
-      - echo "Building the project for Linux..."
-      - go build -trimpath -ldflags="-s -w" -o cmd/backtrack
+      - echo "Building the project for Linux AMD64..."
+      - go build -trimpath -ldflags="-s -w" -o cmd/backtrack_amd64
+
+  build_linux_arm64:
+    env:
+      GOOS: linux
+      GOARCH: arm64
+    cmds:
+      - echo "Building the project for Linux ARM64..."
+      - go build -trimpath -ldflags="-s -w" -o cmd/backtrack_arm64
 
   build_mac:
     env:
