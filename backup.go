@@ -31,7 +31,8 @@ var backupCmd = &cobra.Command{
 
 		configPath, _ := cmd.Flags().GetString("config")
 		outputPath, _ := cmd.Flags().GetString("output")
-		return backup(configPath, outputPath)
+		noRestart, _ := cmd.Flags().GetBool("no-restart")
+		return backup(configPath, outputPath, noRestart)
 	},
 }
 
@@ -55,7 +56,7 @@ var (
 )
 
 // backup 执行备份操作
-func backup(configPath, outputPath string) error {
+func backup(configPath, outputPath string, noRestart bool) error {
 	// 加载配置文件
 	cfg, configBytes, err := loadConfig(configPath)
 	if err != nil {
@@ -63,8 +64,10 @@ func backup(configPath, outputPath string) error {
 	}
 
 	// 暂停服务
-	pauseServices(cfg.ServiceNames)
-	defer resumeServices(cfg.ServiceNames)
+	if !noRestart {
+		pauseServices(cfg.ServiceNames)
+		defer resumeServices(cfg.ServiceNames)
+	}
 
 	// 创建备份文件
 	zipWriter, outFile, err := createBackupFile(outputPath)

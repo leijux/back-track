@@ -36,9 +36,11 @@ func main() {
 		Version: debugInfo.Main.Version,
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "config.yaml", "配置文件路径")
+	backupCmd.PersistentFlags().StringP("config", "c", "config.yaml", "配置文件路径")
 
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
+
+	backupCmd.Flags().BoolP("no-restart", "n", true, "备份时不重启服务")
 
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
 

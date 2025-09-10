@@ -29,7 +29,7 @@ func Test_backup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			outputPath := filepath.Join(t.TempDir(), tt.args.outputPath)
-			if err := backup(tt.args.configPath, outputPath); (err != nil) != tt.wantErr {
+			if err := backup(tt.args.configPath, outputPath, false); (err != nil) != tt.wantErr {
 				t.Errorf("backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			equal, err := zipFilesAreEqual(outputPath, "testdata/output.zip")
