@@ -49,10 +49,12 @@ func restore(zipPath string, rootDir string) error {
 	if err != nil {
 		return err
 	}
+
 	// 设置根目录
 	for k := range fileMap {
 		fileMap[k] = filepath.Join(rootDir, fileMap[k])
 	}
+
 	// 暂停服务
 	pauseServices(cfg.ServiceNames)
 	defer resumeServices(cfg.ServiceNames)
@@ -71,7 +73,7 @@ func restore(zipPath string, rootDir string) error {
 		return err
 	}
 
-	log.Println("\n还原完成")
+	log.Println("还原完成")
 	return nil
 }
 
