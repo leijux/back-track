@@ -36,15 +36,13 @@ func main() {
 		Version: debugInfo.Main.Version,
 	}
 
-	backupCmd.PersistentFlags().StringP("config", "c", "config.yaml", "配置文件路径")
-
+	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
-
 	backupCmd.Flags().BoolP("no-restart", "n", true, "备份时不重启服务")
 
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
-
-	restoreCmd.Flags().StringP("rootDir", "r", "/", "还原根目录")
+	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
+	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
 
 	rootCmd.AddCommand(backupCmd, restoreCmd)
 

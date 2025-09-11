@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
@@ -30,13 +31,14 @@ var restoreCmd = &cobra.Command{
 			return fmt.Errorf("备份文件路径不能为空")
 		}
 
-		rootDir, _ := cmd.Flags().GetString("rootDir")
-		return restore(inputPath, rootDir)
+		rootDir, _ := cmd.Flags().GetString("root-dir")
+		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
+		return restore(inputPath, rootDir, backupBeforeRestore)
 	},
 }
 
 // restore 执行还原操作
-func restore(zipPath string, rootDir string) error {
+func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -48,6 +50,19 @@ func restore(zipPath string, rootDir string) error {
 	cfg, fileMap, err := readBackupMetadata(r.File)
 	if err != nil {
 		return err
+	}
+	// 还原前备份
+	if backupBeforeRestore {
+		backupPath := fmt.Sprintf("backup_%s(%s).zip", time.Now().Format("20060102150405"), filepath.Base(zipPath))
+		log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
+		configBytes, err := yaml.Marshal(cfg)
+		if err != nil {
+			return fmt.Errorf("序列化配置失败: %w", err)
+		}
+		if err := backup(cfg, configBytes, backupPath, true); err != nil {
+			return fmt.Errorf("还原前备份失败: %w", err)
+		}
+		log.Printf("还原前备份完成: %s", backupPath)
 	}
 
 	// 设置根目录
