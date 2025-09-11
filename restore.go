@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -53,7 +54,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 	}
 	// 还原前备份
 	if backupBeforeRestore {
-		backupPath := fmt.Sprintf("backup_%s(%s).zip", time.Now().Format("20060102150405"), filepath.Base(zipPath))
+		backupPath := fmt.Sprintf(".backup/backup_%s(%s).zip", time.Now().Format("20060102150405"), filepath.Base(zipPath))
 		log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
 		configBytes, err := yaml.Marshal(cfg)
 		if err != nil {
@@ -63,6 +64,8 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 			return fmt.Errorf("还原前备份失败: %w", err)
 		}
 		log.Printf("还原前备份完成: %s", backupPath)
+		// 删除旧备份，只保留最新的3个
+		cleanupOldBackups(".backup", 3)
 	}
 
 	// 设置根目录
@@ -203,4 +206,38 @@ func extractFile(f *zip.File, targetPath string) error {
 	}
 
 	return nil
+}
+
+func cleanupOldBackups(dir string, maxBackups int) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		log.Printf("读取备份目录失败 (%s): %v", dir, err)
+		return
+	}
+
+	var backups []os.DirEntry
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".zip" {
+			backups = append(backups, file)
+		}
+	}
+
+	if len(backups) <= maxBackups {
+		return
+	}
+
+	// 按文件名排序（假设文件名包含时间戳）
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].Name() < backups[j].Name()
+	})
+
+	// 删除旧备份
+	for i := 0; i < len(backups)-maxBackups; i++ {
+		toDelete := filepath.Join(dir, backups[i].Name())
+		if err := os.Remove(toDelete); err != nil {
+			log.Printf("删除旧备份失败 (%s): %v", toDelete, err)
+		} else {
+			log.Printf("已删除旧备份: %s", toDelete)
+		}
+	}
 }
