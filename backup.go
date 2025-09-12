@@ -17,10 +17,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	dataDirName = "data"
-)
-
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "执行备份",
@@ -104,6 +100,12 @@ func backup(cfg *Config, configBytes []byte, outputPath string, noRestart bool) 
 
 // createBackupFile 创建备份文件并返回zip writer
 func createBackupFile(outputPath string) (*zip.Writer, *os.File, error) {
+	dir := filepath.Dir(outputPath)
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, nil, fmt.Errorf("创建输出目录失败: %w", err)
+	}
+
 	outFile, err := os.Create(outputPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("创建输出文件失败: %w", err)

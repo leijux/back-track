@@ -26,6 +26,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	// 备份数据目录名称
+	dataDirName = "data"
+	// 还原备份目录名称
+	restoreDirName = ".restore"
+
+	// 保留最新的备份数量
+	retainBackupCount = 3
+)
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 

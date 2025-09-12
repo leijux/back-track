@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -52,9 +53,15 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 	if err != nil {
 		return err
 	}
+
 	// 还原前备份
 	if backupBeforeRestore {
-		backupPath := fmt.Sprintf(".backup/backup_%s(%s).zip", time.Now().Format("20060102150405"), filepath.Base(zipPath))
+		backupPath := fmt.Sprintf("%s/restore_%s(%s).zip",
+			restoreDirName,
+			time.Now().Format("20060102150405"),
+			strings.TrimSuffix(filepath.Base(zipPath), filepath.Ext(zipPath)),
+		)
+
 		log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
 		configBytes, err := yaml.Marshal(cfg)
 		if err != nil {
@@ -65,7 +72,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 		}
 		log.Printf("还原前备份完成: %s", backupPath)
 		// 删除旧备份，只保留最新的3个
-		cleanupOldBackups(".backup", 3)
+		cleanupOldBackups(restoreDirName, retainBackupCount)
 	}
 
 	// 设置根目录
