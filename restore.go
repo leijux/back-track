@@ -98,6 +98,8 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 		return err
 	}
 
+	runCommand("systemctl", "daemon-reload")
+
 	log.Println("还原完成")
 	return nil
 }
