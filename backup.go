@@ -111,8 +111,7 @@ func createBackupFile(outputPath string) (*zip.Writer, *os.File, error) {
 		return nil, nil, fmt.Errorf("创建输出文件失败: %w", err)
 	}
 
-	zipWriter := zip.NewWriter(outFile)
-	return zipWriter, outFile, nil
+	return zip.NewWriter(outFile), outFile, nil
 }
 
 // configureCompression 配置压缩算法
