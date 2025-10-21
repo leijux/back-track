@@ -16,3 +16,9 @@ exclude_files:
 # 需要暂停的服务名称（systemd服务）
 service_names:
   - my_service         # 备份前暂停，备份后恢复
+
+before_script:
+  echo 'Starting restore...'  # 还原前执行的命令
+
+after_script:
+  echo 'Restore completed.'   # 还原后执行的命令

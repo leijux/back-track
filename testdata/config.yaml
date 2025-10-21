@@ -7,3 +7,9 @@ exclude_dirs:
 
 exclude_files:
   - data4.txt
+
+before_script:
+  echo 'test1'
+
+after_script:
+  echo 'test2'

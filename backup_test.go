@@ -103,6 +103,9 @@ func Test_loadConfig(t *testing.T) {
 				},
 				ExcludeDirs:  []string{"data2"},
 				ExcludeFiles: []string{"data4.txt"},
+
+				BeforeScript: "echo 'test1'",
+				AfterScript:  "echo 'test2'",
 			},
 			wantErr: false,
 		},

@@ -43,6 +43,9 @@ type Config struct {
 	ExcludeDirs  []string `yaml:"exclude_dirs,omitempty"`
 	ExcludeFiles []string `yaml:"exclude_files,omitempty"`
 	ServiceNames []string `yaml:"service_names,omitempty"`
+
+	BeforeScript string `yaml:"before_script,omitempty"`
+	AfterScript  string `yaml:"after_script,omitempty"`
 }
 
 type FileMap map[string]string // key: 压缩包内路径, value: 原绝对路径
