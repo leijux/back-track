@@ -202,7 +202,7 @@ func processSingleFile(zipWriter *zip.Writer, task fileTask, mu *sync.Mutex, fil
 func processBackupPaths(cfg *Config, tasks chan<- fileTask) error {
 	for _, path := range cfg.BackupPaths {
 		if err := processSinglePath(cfg, path, tasks); err != nil {
-			return err
+			log.Printf("处理备份路径失败 (%s): %v", path, err)
 		}
 	}
 	return nil
@@ -212,7 +212,7 @@ func processBackupPaths(cfg *Config, tasks chan<- fileTask) error {
 func processSinglePath(cfg *Config, path string, tasks chan<- fileTask) error {
 	info, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("读取路径信息失败 (%s): %w", path, err)
+		return err
 	}
 
 	if info.IsDir() {
@@ -300,7 +300,8 @@ func countTotalFiles(cfg *Config) (int, error) {
 	for _, path := range cfg.BackupPaths {
 		info, err := os.Stat(path)
 		if err != nil {
-			return 0, fmt.Errorf("读取路径信息失败 (%s): %w", path, err)
+			log.Printf("无法访问路径 (%s): %v", path, err)
+			continue
 		}
 
 		if info.IsDir() {

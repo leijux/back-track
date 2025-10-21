@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -54,15 +53,41 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 		return err
 	}
 
+	if cfg.BeforeScript != "" {
+		result, err := runCommand("sh", "-c", cfg.BeforeScript)
+		if err != nil {
+			log.Printf("执行还原前脚本失败: %v", err)
+			return err
+		}
+		log.Printf("还原前脚本输出:\n%s", result)
+	}
+
+	if cfg.AfterScript != "" {
+		defer func() {
+			result, err := runCommand("sh", "-c", cfg.AfterScript)
+			if err != nil {
+				log.Printf("执行还原后脚本失败: %v", err)
+				return
+			}
+			log.Printf("还原后脚本输出:\n%s", result)
+		}()
+	}
+
 	// 还原前备份
 	if backupBeforeRestore {
-		backupPath := fmt.Sprintf("%s/restore_%s(%s).zip",
-			restoreDirName,
-			time.Now().Format("20060102150405"),
-			strings.TrimSuffix(filepath.Base(zipPath), filepath.Ext(zipPath)),
-		)
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("获取用户主目录失败: %w", err)
+		}
 
+		restoreDirName := filepath.Join(homeDir, ".backup_restore")
+		if err := os.MkdirAll(restoreDirName, 0755); err != nil {
+			return fmt.Errorf("创建还原目录失败: %w", err)
+		}
+
+		backupPath := filepath.Join(restoreDirName, fmt.Sprintf("restore_%s.zip", time.Now().Format("20060102150405")))
 		log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
+
 		configBytes, err := yaml.Marshal(cfg)
 		if err != nil {
 			return fmt.Errorf("序列化配置失败: %w", err)
@@ -98,7 +123,10 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 		return err
 	}
 
-	runCommand("systemctl", "daemon-reload")
+	// 重新加载服务
+	if len(cfg.ServiceNames) > 0 {
+		runCommand("systemctl", "daemon-reload")
+	}
 
 	log.Println("还原完成")
 	return nil
