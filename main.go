@@ -54,7 +54,9 @@ func main() {
 
 	rootCmd.AddCommand(backupCmd, restoreCmd)
 
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func checkRoot() error {
