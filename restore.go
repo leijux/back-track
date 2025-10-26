@@ -34,12 +34,14 @@ var restoreCmd = &cobra.Command{
 
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
-		return restore(inputPath, rootDir, backupBeforeRestore)
+		noScripts, _ := cmd.Flags().GetBool("no-scripts")
+
+		return restore(inputPath, rootDir, backupBeforeRestore, noScripts)
 	},
 }
 
 // restore 执行还原操作
-func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
+func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -53,31 +55,11 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 		return err
 	}
 
-	if cfg.BeforeScript != "" {
-		result, err := runCommand("sh", "-c", cfg.BeforeScript)
-		if err != nil {
-			log.Printf("执行还原前脚本失败: %v", err)
-			return err
-		}
-		log.Printf("还原前脚本输出:\n%s", result)
-	}
-
-	if cfg.AfterScript != "" {
-		defer func() {
-			result, err := runCommand("sh", "-c", cfg.AfterScript)
-			if err != nil {
-				log.Printf("执行还原后脚本失败: %v", err)
-				return
-			}
-			log.Printf("还原后脚本输出:\n%s", result)
-		}()
-	}
-
 	// 还原前备份
 	if backupBeforeRestore {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return fmt.Errorf("获取用户主目录失败: %w", err)
+			return fmt.Errorf("获取用户主目录r失败: %w", err)
 		}
 
 		restoreDirName := filepath.Join(homeDir, ".backup_restore")
@@ -108,6 +90,28 @@ func restore(zipPath string, rootDir string, backupBeforeRestore bool) error {
 	// 暂停服务
 	pauseServices(cfg.ServiceNames)
 	defer resumeServices(cfg.ServiceNames)
+
+	// 执行还原前脚本
+	if cfg.BeforeScript != "" && !noScripts {
+		result, err := runCommand("sh", "-c", cfg.BeforeScript)
+		if err != nil {
+			log.Printf("执行还原前脚本失败: %v", err)
+			return err
+		}
+		log.Printf("还原前脚本输出:\n%s", result)
+	}
+
+	// 执行还原后脚本
+	if cfg.AfterScript != "" && !noScripts {
+		defer func() {
+			result, err := runCommand("sh", "-c", cfg.AfterScript)
+			if err != nil {
+				log.Printf("执行还原后脚本失败: %v", err)
+				return
+			}
+			log.Printf("还原后脚本输出:\n%s", result)
+		}()
+	}
 
 	// 获取需要还原的文件列表
 	filesToRestore := getFilesToRestore(r.File)
