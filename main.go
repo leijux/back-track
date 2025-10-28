@@ -46,7 +46,7 @@ func main() {
 
 	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
-	backupCmd.Flags().BoolP("no-restart", "n", true, "备份时不重启服务")
+	backupCmd.Flags().BoolP("restart", "r", false, "备份时重启服务")
 
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")

@@ -27,14 +27,14 @@ var backupCmd = &cobra.Command{
 
 		configPath, _ := cmd.Flags().GetString("config")
 		outputPath, _ := cmd.Flags().GetString("output")
-		noRestart, _ := cmd.Flags().GetBool("no-restart")
+		restart, _ := cmd.Flags().GetBool("restart")
 
 		cfg, configBytes, err := loadConfig(configPath)
 		if err != nil {
 			return fmt.Errorf("加载配置失败: %w", err)
 		}
 
-		return backup(cfg, configBytes, outputPath, noRestart)
+		return backup(cfg, configBytes, outputPath, restart)
 	},
 }
 
@@ -61,9 +61,9 @@ var (
 )
 
 // backup 执行备份操作
-func backup(cfg *Config, configBytes []byte, outputPath string, noRestart bool) error {
+func backup(cfg *Config, configBytes []byte, outputPath string, restart bool) error {
 	// 暂停服务
-	if !noRestart {
+	if restart {
 		pauseServices(cfg.ServiceNames)
 		defer resumeServices(cfg.ServiceNames)
 	}
