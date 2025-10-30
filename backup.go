@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
@@ -32,6 +33,11 @@ var backupCmd = &cobra.Command{
 
 		return backup(cfg, configBytes, outputPath)
 	},
+}
+
+func init() {
+	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
+	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
 }
 
 type Config struct {

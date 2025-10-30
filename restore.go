@@ -38,6 +38,13 @@ var restoreCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
+	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
+	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
+	restoreCmd.Flags().BoolP("no-script", "s", false, "还原时不执行脚本")
+}
+
 // restore 执行还原操作
 func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool) error {
 	// 打开备份文件

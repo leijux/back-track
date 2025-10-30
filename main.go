@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"runtime/debug"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -34,26 +34,21 @@ const (
 	retainBackupCount = 3
 )
 
-func main() {
+var rootCmd = &cobra.Command{
+	Use:   "backtrack",
+	Short: "文件备份和还原工具",
+}
+
+func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	debugInfo, _ := debug.ReadBuildInfo()
-	rootCmd := &cobra.Command{
-		Use:     "backtrack",
-		Short:   "文件备份和还原工具",
-		Version: debugInfo.Main.Version,
-	}
-
-	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
-	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
-
-	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
-	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
-	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
-	restoreCmd.Flags().BoolP("no-script", "s", false, "还原时不执行脚本")
+	rootCmd.Version = debugInfo.Main.Version
 
 	rootCmd.AddCommand(backupCmd, restoreCmd)
+}
 
+func main() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -64,4 +59,15 @@ func checkRoot(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("请以root权限运行")
 	}
 	return nil
+}
+
+// runCommand 执行系统命令并返回结果
+func runCommand(name string, args ...string) (string, error) {
+	cmd := exec.Command(name, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("命令执行失败 (%s %v): %w, 输出: %s",
+			name, args, err, string(output))
+	}
+	return string(output), nil
 }
