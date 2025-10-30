@@ -18,13 +18,10 @@ import (
 )
 
 var backupCmd = &cobra.Command{
-	Use:   "backup",
-	Short: "执行备份",
+	Use:     "backup",
+	Short:   "执行备份",
+	PreRunE: checkRoot,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := checkRoot(); err != nil {
-			return err
-		}
-
 		configPath, _ := cmd.Flags().GetString("config")
 		outputPath, _ := cmd.Flags().GetString("output")
 
@@ -402,7 +399,7 @@ func writeZipFile(zipWriter *zip.Writer, name string, data []byte, mu *sync.Mute
 func loadConfig(path string) (*Config, []byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("读取配置文件失败 (%s): %w", path, err)
+		return nil, nil, err
 	}
 
 	var cfg Config

@@ -59,7 +59,7 @@ func main() {
 	}
 }
 
-func checkRoot() error {
+func checkRoot(cmd *cobra.Command, args []string) error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("请以root权限运行")
 	}
