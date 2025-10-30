@@ -35,7 +35,7 @@ func Test_backup(t *testing.T) {
 				t.Fatalf("loadConfig() error = %v", err)
 			}
 
-			if err := backup(cfg, configBytes, outputPath, false); (err != nil) != tt.wantErr {
+			if err := backup(cfg, configBytes, outputPath); (err != nil) != tt.wantErr {
 				t.Errorf("backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			equal, err := zipFilesAreEqual(outputPath, "testdata/output.zip")

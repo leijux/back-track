@@ -27,14 +27,13 @@ var backupCmd = &cobra.Command{
 
 		configPath, _ := cmd.Flags().GetString("config")
 		outputPath, _ := cmd.Flags().GetString("output")
-		restart, _ := cmd.Flags().GetBool("restart")
 
 		cfg, configBytes, err := loadConfig(configPath)
 		if err != nil {
 			return fmt.Errorf("加载配置失败: %w", err)
 		}
 
-		return backup(cfg, configBytes, outputPath, restart)
+		return backup(cfg, configBytes, outputPath)
 	},
 }
 
@@ -42,7 +41,6 @@ type Config struct {
 	BackupPaths  []string `yaml:"backup_paths"`
 	ExcludeDirs  []string `yaml:"exclude_dirs,omitempty"`
 	ExcludeFiles []string `yaml:"exclude_files,omitempty"`
-	ServiceNames []string `yaml:"service_names,omitempty"`
 
 	BeforeScript string `yaml:"before_script,omitempty"`
 	AfterScript  string `yaml:"after_script,omitempty"`
@@ -61,13 +59,7 @@ var (
 )
 
 // backup 执行备份操作
-func backup(cfg *Config, configBytes []byte, outputPath string, restart bool) error {
-	// 暂停服务
-	if restart {
-		pauseServices(cfg.ServiceNames)
-		defer resumeServices(cfg.ServiceNames)
-	}
-
+func backup(cfg *Config, configBytes []byte, outputPath string) error {
 	// 创建备份文件
 	zipWriter, outFile, err := createBackupFile(outputPath)
 	if err != nil {

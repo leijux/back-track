@@ -74,7 +74,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 		if err != nil {
 			return fmt.Errorf("序列化配置失败: %w", err)
 		}
-		if err := backup(cfg, configBytes, backupPath, true); err != nil {
+		if err := backup(cfg, configBytes, backupPath); err != nil {
 			return fmt.Errorf("还原前备份失败: %w", err)
 		}
 		log.Printf("还原前备份完成: %s", backupPath)
@@ -86,10 +86,6 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 	for k := range fileMap {
 		fileMap[k] = filepath.Join(rootDir, fileMap[k])
 	}
-
-	// 暂停服务
-	pauseServices(cfg.ServiceNames)
-	defer resumeServices(cfg.ServiceNames)
 
 	// 执行还原前脚本
 	if cfg.BeforeScript != "" && !noScripts {
@@ -125,11 +121,6 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 	// 并发还原文件
 	if err := restoreFilesConcurrently(filesToRestore, fileMap, bar); err != nil {
 		return err
-	}
-
-	// 重新加载服务
-	if len(cfg.ServiceNames) > 0 {
-		runCommand("systemctl", "daemon-reload")
 	}
 
 	log.Println("还原完成")
