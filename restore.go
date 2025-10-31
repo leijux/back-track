@@ -64,7 +64,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 	if backupBeforeRestore {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return fmt.Errorf("获取用户主目录r失败: %w", err)
+			return fmt.Errorf("获取用户主目录失败: %w", err)
 		}
 
 		restoreDirName := filepath.Join(homeDir, ".backup_restore")
