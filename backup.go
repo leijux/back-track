@@ -155,10 +155,7 @@ func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, file
 	startWorkers(zipWriter, mu, fileMap, bar, tasks, &wg, runtime.NumCPU())
 
 	// 遍历备份路径并分发任务
-	if err := processBackupPaths(cfg, tasks); err != nil {
-		close(tasks)
-		return err
-	}
+	processBackupPaths(cfg, tasks)
 
 	// 等待所有任务完成
 	close(tasks)
@@ -186,7 +183,9 @@ func processFileTasks(zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
 		bar.Describe(fmt.Sprintf("备份 %s", filepath.Base(task.absPath)))
 
 		if err := processSingleFile(zipWriter, task, mu, fileMap); err != nil {
-			log.Printf("文件处理失败: %s → %s, 错误: %v", task.absPath, task.relPath, err)
+			log.Printf("备份文件失败 (%s): %v", task.absPath, err)
+			bar.Describe(fmt.Sprintf("文件处理失败: %s", filepath.Base(task.absPath)))
+
 			continue
 		}
 
@@ -208,13 +207,12 @@ func processSingleFile(zipWriter *zip.Writer, task fileTask, mu *sync.Mutex, fil
 }
 
 // processBackupPaths 处理所有备份路径
-func processBackupPaths(cfg *Config, tasks chan<- fileTask) error {
+func processBackupPaths(cfg *Config, tasks chan<- fileTask) {
 	for _, path := range cfg.BackupPaths {
 		if err := processSinglePath(cfg, path, tasks); err != nil {
 			log.Printf("处理备份路径失败 (%s): %v", path, err)
 		}
 	}
-	return nil
 }
 
 // processSinglePath 处理单个备份路径

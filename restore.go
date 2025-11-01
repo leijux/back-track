@@ -72,29 +72,9 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 
 	// 还原前备份
 	if backupBeforeRestore {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("获取用户主目录失败: %w", err)
+		if err := backupBeforeRestoreAction(cfg, quiet); err != nil {
+			return err
 		}
-
-		restoreDirName := filepath.Join(homeDir, ".backup_restore")
-		if err := os.MkdirAll(restoreDirName, 0755); err != nil {
-			return fmt.Errorf("创建还原目录失败: %w", err)
-		}
-
-		backupPath := filepath.Join(restoreDirName, fmt.Sprintf("restore_%s.zip", time.Now().Format("20060102150405")))
-		log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
-
-		configBytes, err := yaml.Marshal(cfg)
-		if err != nil {
-			return fmt.Errorf("序列化配置失败: %w", err)
-		}
-		if err := backup(cfg, configBytes, backupPath, quiet); err != nil {
-			return fmt.Errorf("还原前备份失败: %w", err)
-		}
-		log.Printf("还原前备份完成: %s", backupPath)
-		// 删除旧备份，只保留最新的3个
-		cleanupOldBackups(restoreDirName, retainBackupCount)
 	}
 
 	// 设置根目录
@@ -285,4 +265,34 @@ func cleanupOldBackups(dir string, maxBackups int) {
 			log.Printf("已删除旧备份: %s", toDelete)
 		}
 	}
+}
+
+// backupBeforeRestoreAction 在还原前执行备份操作
+func backupBeforeRestoreAction(cfg *Config, quiet bool) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("获取用户主目录失败: %w", err)
+	}
+
+	restoreDirName := filepath.Join(homeDir, ".backup_restore")
+	if err := os.MkdirAll(restoreDirName, 0755); err != nil {
+		return fmt.Errorf("创建还原目录失败: %w", err)
+	}
+
+	backupPath := filepath.Join(restoreDirName, fmt.Sprintf("restore_%s.zip", time.Now().Format("20060102150405")))
+	log.Printf("正在还原前备份当前文件，备份文件: %s", backupPath)
+
+	configBytes, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("序列化配置失败: %w", err)
+	}
+
+	if err := backup(cfg, configBytes, backupPath, quiet); err != nil {
+		return fmt.Errorf("还原前备份失败: %w", err)
+	}
+	log.Printf("还原前备份完成: %s", backupPath)
+	// 删除旧备份，只保留最新的3个
+	cleanupOldBackups(restoreDirName, retainBackupCount)
+
+	return nil
 }
