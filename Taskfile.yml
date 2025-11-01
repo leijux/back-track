@@ -2,10 +2,11 @@
 
 version: "3"
 
+env:
+  GOEXPERIMENT: greenteagc,jsonv2
+
 tasks:
   build:
-    env:
-      OEXPERIMENT: greenteagc
     cmds:
       - task: build_linux_amd64
       - task: build_linux_arm64
