@@ -51,7 +51,6 @@ func init() {
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
 	restoreCmd.Flags().BoolP("no-scripts", "s", false, "还原时不执行脚本")
-	restoreCmd.Flags().BoolP("quiet", "q", false, "静默模式，不输出日志")
 
 	rootCmd.AddCommand(restoreCmd)
 }
@@ -90,7 +89,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 		if err != nil {
 			return fmt.Errorf("序列化配置失败: %w", err)
 		}
-		if err := backup(cfg, configBytes, backupPath); err != nil {
+		if err := backup(cfg, configBytes, backupPath, quiet); err != nil {
 			return fmt.Errorf("还原前备份失败: %w", err)
 		}
 		log.Printf("还原前备份完成: %s", backupPath)
@@ -119,10 +118,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 	}
 
 	// 初始化进度条
-	bar := progressbar.Default(int64(len(filesToRestore)), "正在还原")
-	if quiet {
-		bar = progressbar.DefaultSilent(int64(len(filesToRestore)), "正在还原")
-	}
+	bar := newRestoreProgressBar(int64(len(filesToRestore)), quiet)
 
 	// 并发还原文件
 	if err := restoreFilesConcurrently(filesToRestore, fileMap, bar); err != nil {

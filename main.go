@@ -33,7 +33,9 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	debugInfo, _ := debug.ReadBuildInfo()
+
 	rootCmd.Version = debugInfo.Main.Version
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "静默模式，不输出日志")
 }
 
 func main() {

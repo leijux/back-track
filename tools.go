@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -24,4 +25,11 @@ func runCommand(name string, args ...string) (string, error) {
 			name, args, err, string(output))
 	}
 	return string(output), nil
+}
+
+func newRestoreProgressBar(filesToRestoreCount int64, quiet bool) *progressbar.ProgressBar {
+	if quiet {
+		return progressbar.DefaultSilent(filesToRestoreCount, "正在还原")
+	}
+	return progressbar.Default(filesToRestoreCount, "正在还原")
 }

@@ -26,14 +26,16 @@ var backupCmd = &cobra.Command{
 	PreRunE: checkRoot,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		configPath, _ := cmd.Flags().GetString("config")
-		outputPath, _ := cmd.Flags().GetString("output")
 
 		cfg, configBytes, err := loadConfig(configPath)
 		if err != nil {
 			return fmt.Errorf("加载配置失败: %w", err)
 		}
 
-		if err := backup(cfg, configBytes, outputPath); err != nil {
+		outputPath, _ := cmd.Flags().GetString("output")
+		quiet, _ := cmd.Flags().GetBool("quiet")
+
+		if err := backup(cfg, configBytes, outputPath, quiet); err != nil {
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -71,7 +73,7 @@ var (
 )
 
 // backup 执行备份操作
-func backup(cfg *Config, configBytes []byte, outputPath string) error {
+func backup(cfg *Config, configBytes []byte, outputPath string, quiet bool) error {
 	// 创建备份文件
 	zipWriter, outFile, err := createBackupFile(outputPath)
 	if err != nil {
@@ -92,7 +94,7 @@ func backup(cfg *Config, configBytes []byte, outputPath string) error {
 	}
 
 	// 处理文件备份
-	if err := processBackupFiles(cfg, zipWriter, &mu, fileMap); err != nil {
+	if err := processBackupFiles(cfg, zipWriter, &mu, fileMap, quiet); err != nil {
 		return err
 	}
 
@@ -134,7 +136,7 @@ func writeConfigToZip(zipWriter *zip.Writer, configBytes []byte, mu *sync.Mutex)
 }
 
 // processBackupFiles 处理文件备份过程
-func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap) error {
+func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap, quiet bool) error {
 	// 统计总文件数
 	totalFiles, err := countTotalFiles(cfg)
 	if err != nil {
@@ -143,7 +145,7 @@ func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, file
 	fmt.Printf("共 %d 个文件待备份\n", totalFiles)
 
 	// 初始化进度条
-	bar := progressbar.Default(int64(totalFiles))
+	bar := newRestoreProgressBar(int64(totalFiles), quiet)
 
 	// 创建任务通道和worker池
 	tasks := make(chan fileTask, 1000)
