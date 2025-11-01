@@ -17,32 +17,41 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const retainBackupCount = 3 // 保留的还原前备份数量
+
 var restoreCmd = &cobra.Command{
-	Use:     "restore",
-	Short:   "执行还原",
-	PreRunE: checkRoot,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		inputPath, err := cmd.Flags().GetString("input")
-		if err != nil {
-			return err
-		}
+	Use:   "restore",
+	Short: "执行还原",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		inputPath, _ := cmd.Flags().GetString("input")
 		if inputPath == "" {
 			return fmt.Errorf("备份文件路径不能为空")
 		}
 
+		return checkRoot(cmd, args)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		inputPath, _ := cmd.Flags().GetString("input")
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
 		noScripts, _ := cmd.Flags().GetBool("no-scripts")
 
-		return restore(inputPath, rootDir, backupBeforeRestore, noScripts)
+		if err := restore(inputPath, rootDir, backupBeforeRestore, noScripts); err != nil {
+			cmd.SilenceUsage = true
+			return err
+		}
+		return nil
 	},
 }
 
 func init() {
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
+	restoreCmd.MarkFlagRequired("input")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
 	restoreCmd.Flags().BoolP("no-script", "s", false, "还原时不执行脚本")
+
+	rootCmd.AddCommand(restoreCmd)
 }
 
 // restore 执行还原操作
