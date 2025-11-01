@@ -181,10 +181,13 @@ func processFileTasks(zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
 	bar *progressbar.ProgressBar, tasks chan fileTask) {
 
 	for task := range tasks {
+		bar.Describe(fmt.Sprintf("备份 %s", filepath.Base(task.absPath)))
+
 		if err := processSingleFile(zipWriter, task, mu, fileMap); err != nil {
 			log.Printf("文件处理失败: %s → %s, 错误: %v", task.absPath, task.relPath, err)
 			continue
 		}
+
 		bar.Add(1)
 	}
 }

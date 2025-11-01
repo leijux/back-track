@@ -189,6 +189,8 @@ func restoreFilesConcurrently(filesToRestore []*zip.File, fileMap FileMap, bar *
 			sem <- struct{}{}        // 获取信号量
 			defer func() { <-sem }() // 释放信号量
 
+			bar.Describe(fmt.Sprintf("还原 %s", filepath.Base(targetPath)))
+
 			if err := extractFile(f, targetPath); err != nil {
 				return fmt.Errorf("还原文件 %s 失败: %w", targetPath, err)
 			}
