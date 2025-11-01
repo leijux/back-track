@@ -43,7 +43,7 @@ func Test_restore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			if err := restore(tt.args.zipPath, tempDir, false, false); (err != nil) != tt.wantErr {
+			if err := restore(tt.args.zipPath, tempDir, false, false, true); (err != nil) != tt.wantErr {
 				t.Errorf("restore() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if gotExists := filesMatchContent(tt.args.fileDataMap, tempDir); gotExists != tt.wantExists {

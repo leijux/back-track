@@ -35,8 +35,9 @@ var restoreCmd = &cobra.Command{
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
 		noScripts, _ := cmd.Flags().GetBool("no-scripts")
+		quiet, _ := cmd.Flags().GetBool("quiet")
 
-		if err := restore(inputPath, rootDir, backupBeforeRestore, noScripts); err != nil {
+		if err := restore(inputPath, rootDir, backupBeforeRestore, noScripts, quiet); err != nil {
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -49,17 +50,18 @@ func init() {
 	restoreCmd.MarkFlagRequired("input")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
-	restoreCmd.Flags().BoolP("no-script", "s", false, "还原时不执行脚本")
+	restoreCmd.Flags().BoolP("no-scripts", "s", false, "还原时不执行脚本")
+	restoreCmd.Flags().BoolP("quiet", "q", false, "静默模式，不输出日志")
 
 	rootCmd.AddCommand(restoreCmd)
 }
 
 // restore 执行还原操作
-func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool) error {
+func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, quiet bool) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return fmt.Errorf("无法打开备份文件 (%s): %w", zipPath, err)
+		return fmt.Errorf("打开备份文件失败 (%s): %w", zipPath, err)
 	}
 	defer r.Close()
 
@@ -105,22 +107,9 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 	if cfg.BeforeScript != "" && !noScripts {
 		result, err := runCommand("sh", "-c", cfg.BeforeScript)
 		if err != nil {
-			log.Printf("执行还原前脚本失败: %v", err)
-			return err
+			return fmt.Errorf("执行还原前脚本失败: %w", err)
 		}
 		log.Printf("还原前脚本输出:\n%s", result)
-	}
-
-	// 执行还原后脚本
-	if cfg.AfterScript != "" && !noScripts {
-		defer func() {
-			result, err := runCommand("sh", "-c", cfg.AfterScript)
-			if err != nil {
-				log.Printf("执行还原后脚本失败: %v", err)
-				return
-			}
-			log.Printf("还原后脚本输出:\n%s", result)
-		}()
 	}
 
 	// 获取需要还原的文件列表
@@ -131,10 +120,22 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts bool
 
 	// 初始化进度条
 	bar := progressbar.Default(int64(len(filesToRestore)), "正在还原")
+	if quiet {
+		bar = progressbar.DefaultSilent(int64(len(filesToRestore)), "正在还原")
+	}
 
 	// 并发还原文件
 	if err := restoreFilesConcurrently(filesToRestore, fileMap, bar); err != nil {
 		return err
+	}
+
+	// 执行还原后脚本
+	if cfg.AfterScript != "" && !noScripts {
+		result, err := runCommand("sh", "-c", cfg.AfterScript)
+		if err != nil {
+			return fmt.Errorf("执行还原后脚本失败: %w", err)
+		}
+		log.Printf("还原后脚本输出:\n%s", result)
 	}
 
 	log.Println("还原完成")
