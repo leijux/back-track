@@ -1,9 +1,9 @@
 module github.com/leijux/back-track
 
-go 1.25.0
+go 1.25
 
 ignore (
-	cmd
+	build
 	testdata
 )
 
