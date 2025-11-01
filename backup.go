@@ -18,6 +18,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const dataDirName = "data" // 备份数据目录名称
+
 var backupCmd = &cobra.Command{
 	Use:     "backup",
 	Short:   "执行备份",
@@ -31,13 +33,20 @@ var backupCmd = &cobra.Command{
 			return fmt.Errorf("加载配置失败: %w", err)
 		}
 
-		return backup(cfg, configBytes, outputPath)
+		if err := backup(cfg, configBytes, outputPath); err != nil {
+			cmd.SilenceUsage = true
+			return err
+		}
+
+		return nil
 	},
 }
 
 func init() {
 	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
+
+	rootCmd.AddCommand(backupCmd)
 }
 
 type Config struct {
