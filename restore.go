@@ -32,6 +32,13 @@ var restoreCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		inputPath, _ := cmd.Flags().GetString("input")
+		if len(args) > 0 {
+			inputPath = args[0]
+		}
+		if inputPath == "" {
+			return fmt.Errorf("必须提供备份文件路径")
+		}
+
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
 		noScripts, _ := cmd.Flags().GetBool("no-scripts")
@@ -47,7 +54,6 @@ var restoreCmd = &cobra.Command{
 
 func init() {
 	restoreCmd.Flags().StringP("input", "i", "", "备份文件路径")
-	restoreCmd.MarkFlagRequired("input")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原时是否备份，保留最近3个备份")
 	restoreCmd.Flags().BoolP("no-scripts", "s", false, "还原时不执行脚本")
@@ -105,6 +111,8 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 		return err
 	}
 
+	bar.Describe("还原完成")
+
 	// 执行还原后脚本
 	if cfg.AfterScript != "" && !noScripts {
 		result, err := runCommand("sh", "-c", cfg.AfterScript)
@@ -114,7 +122,6 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 		log.Printf("还原后脚本输出:\n%s", result)
 	}
 
-	log.Println("还原完成")
 	return nil
 }
 
