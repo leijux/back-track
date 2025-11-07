@@ -145,7 +145,7 @@ func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, file
 	fmt.Printf("共 %d 个文件待备份\n", totalFiles)
 
 	// 初始化进度条
-	bar := newRestoreProgressBar(int64(totalFiles), quiet)
+	bar := newProgressBar(int64(totalFiles), quiet, "正在备份")
 
 	// 创建任务通道和worker池
 	tasks := make(chan fileTask, 1000)

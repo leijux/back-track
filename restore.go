@@ -98,7 +98,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 	}
 
 	// 初始化进度条
-	bar := newRestoreProgressBar(int64(len(filesToRestore)), quiet)
+	bar := newProgressBar(int64(len(filesToRestore)), quiet, "正在还原")
 
 	// 并发还原文件
 	if err := restoreFilesConcurrently(filesToRestore, fileMap, bar); err != nil {

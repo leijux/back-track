@@ -27,9 +27,9 @@ func runCommand(name string, args ...string) (string, error) {
 	return string(output), nil
 }
 
-func newRestoreProgressBar(filesToRestoreCount int64, quiet bool) *progressbar.ProgressBar {
+func newProgressBar(filesToRestoreCount int64, quiet bool, description string) *progressbar.ProgressBar {
 	if quiet {
-		return progressbar.DefaultSilent(filesToRestoreCount, "正在还原")
+		return progressbar.DefaultSilent(filesToRestoreCount, description)
 	}
-	return progressbar.Default(filesToRestoreCount, "正在还原")
+	return progressbar.Default(filesToRestoreCount, description)
 }
