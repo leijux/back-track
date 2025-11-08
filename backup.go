@@ -45,7 +45,7 @@ var backupCmd = &cobra.Command{
 }
 
 func init() {
-	backupCmd.Flags().StringP("config", "c", "config.yaml", "配置文件路径")
+	backupCmd.Flags().StringP("config", "c", "config.yaml", "备份配置文件路径")
 	backupCmd.Flags().StringP("output", "o", fmt.Sprintf("backup_%s.zip", time.Now().Format("20060102150405")), "备份输出路径")
 
 	rootCmd.AddCommand(backupCmd)
