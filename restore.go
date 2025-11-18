@@ -24,14 +24,6 @@ var restoreCmd = &cobra.Command{
 	Short: "执行还原",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		inputPath, _ := cmd.Flags().GetString("input")
-		if inputPath == "" {
-			return fmt.Errorf("备份文件路径不能为空")
-		}
-
-		return checkRoot(cmd, args)
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		inputPath, _ := cmd.Flags().GetString("input")
 		if len(args) > 0 {
 			inputPath = args[0]
 		}
@@ -39,6 +31,10 @@ var restoreCmd = &cobra.Command{
 			return fmt.Errorf("必须提供备份文件路径")
 		}
 
+		return checkRoot(cmd, args)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		inputPath, _ := cmd.Flags().GetString("input")
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
 		noScripts, _ := cmd.Flags().GetBool("no-scripts")
