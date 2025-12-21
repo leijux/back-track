@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -43,7 +44,7 @@ var restoreCmd = &cobra.Command{
 		script, _ := cmd.Flags().GetBool("script")
 		quiet, _ := cmd.Flags().GetBool("quiet")
 
-		if err := restore(inputPath, rootDir, backupBeforeRestore, script, quiet); err != nil {
+		if err := restore(cmd.Context(), inputPath, rootDir, backupBeforeRestore, script, quiet); err != nil {
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -61,7 +62,7 @@ func init() {
 }
 
 // restore 执行还原操作
-func restore(zipPath string, rootDir string, backupBeforeRestore, script, quiet bool) error {
+func restore(ctx context.Context, zipPath string, rootDir string, backupBeforeRestore, script, quiet bool) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -81,7 +82,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, script, quiet 
 
 	// 还原前备份
 	if backupBeforeRestore {
-		if err := backupBeforeRestoreAction(cfg, quiet); err != nil {
+		if err := backupBeforeRestoreAction(ctx, cfg, quiet); err != nil {
 			return err
 		}
 	}
@@ -278,7 +279,7 @@ func cleanupOldBackups(dir string, maxBackups int) {
 }
 
 // backupBeforeRestoreAction 在还原前执行备份操作
-func backupBeforeRestoreAction(cfg *Config, quiet bool) error {
+func backupBeforeRestoreAction(ctx context.Context, cfg *Config, quiet bool) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("获取用户主目录失败: %w", err)
@@ -297,7 +298,7 @@ func backupBeforeRestoreAction(cfg *Config, quiet bool) error {
 		return fmt.Errorf("序列化配置失败: %w", err)
 	}
 
-	if err := backup(cfg, configBytes, backupPath, quiet); err != nil {
+	if err := backup(ctx, cfg, configBytes, backupPath, quiet); err != nil {
 		return fmt.Errorf("还原前备份失败: %w", err)
 	}
 	log.Printf("还原前备份完成: %s", backupPath)

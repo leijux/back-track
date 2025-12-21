@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -18,7 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const dataDirName = "data" // 备份数据目录名称
+const (
+	dataDirName      = "data" // 备份数据目录名称
+	backupConfigName = "backup_config.yaml"
+)
 
 var backupCmd = &cobra.Command{
 	Use:     "backup",
@@ -34,8 +38,7 @@ var backupCmd = &cobra.Command{
 
 		outputPath, _ := cmd.Flags().GetString("output")
 		quiet, _ := cmd.Flags().GetBool("quiet")
-
-		if err := backup(cfg, configBytes, outputPath, quiet); err != nil {
+		if err := backup(cmd.Context(), cfg, configBytes, outputPath, quiet); err != nil {
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -73,7 +76,14 @@ var (
 )
 
 // backup 执行备份操作
-func backup(cfg *Config, configBytes []byte, outputPath string, quiet bool) error {
+func backup(ctx context.Context, cfg *Config, configBytes []byte, outputPath string, quiet bool) error {
+	var err error
+	defer func() {
+		if err != nil {
+			os.Remove(outputPath)
+		}
+	}()
+
 	// 创建备份文件
 	zipWriter, outFile, err := createBackupFile(outputPath)
 	if err != nil {
@@ -86,21 +96,23 @@ func backup(cfg *Config, configBytes []byte, outputPath string, quiet bool) erro
 		return flate.NewWriter(w, flate.BestCompression)
 	})
 
-	var mu sync.Mutex
-	fileMap := make(FileMap)
+	var (
+		mu      sync.Mutex
+		fileMap = make(FileMap)
+	)
 
 	// 写入配置文件到备份包
-	if err := writeZipFile(zipWriter, "backup_config.yaml", configBytes, &mu); err != nil {
+	if err = writeZipFile(zipWriter, backupConfigName, configBytes, &mu); err != nil {
 		return err
 	}
 
 	// 处理文件备份
-	if err := processBackupFiles(cfg, zipWriter, &mu, fileMap, quiet); err != nil {
+	if err = processBackupFiles(ctx, cfg, zipWriter, &mu, fileMap, quiet); err != nil {
 		return err
 	}
 
 	// 写入文件映射到备份包
-	if err := writeFileMapToZip(zipWriter, fileMap, &mu); err != nil {
+	if err = writeFileMapToZip(zipWriter, fileMap, &mu); err != nil {
 		return err
 	}
 
@@ -126,7 +138,7 @@ func createBackupFile(outputPath string) (*zip.Writer, *os.File, error) {
 }
 
 // processBackupFiles 处理文件备份过程
-func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap, quiet bool) error {
+func processBackupFiles(ctx context.Context, cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap, quiet bool) error {
 	// 统计总文件数
 	totalFiles, err := countTotalFiles(cfg)
 	if err != nil {
@@ -142,44 +154,49 @@ func processBackupFiles(cfg *Config, zipWriter *zip.Writer, mu *sync.Mutex, file
 	var wg sync.WaitGroup
 
 	// 启动worker处理文件
-	startWorkers(zipWriter, mu, fileMap, bar, tasks, &wg, runtime.NumCPU())
+	startWorkers(ctx, zipWriter, mu, fileMap, bar, tasks, &wg, runtime.NumCPU())
 
 	// 遍历备份路径并分发任务
-	processBackupPaths(cfg, tasks)
+	processBackupPaths(ctx, cfg, tasks)
 
 	// 等待所有任务完成
 	close(tasks)
 	wg.Wait()
 
-	return nil
+	return ctx.Err()
 }
 
 // startWorkers 启动worker协程处理文件任务
-func startWorkers(zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
+func startWorkers(ctx context.Context, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
 	bar *progressbar.ProgressBar, tasks chan fileTask, wg *sync.WaitGroup, workerCount int) {
 
 	for i := 0; i < workerCount; i++ {
 		wg.Go(func() {
-			processFileTasks(zipWriter, mu, fileMap, bar, tasks)
+			processFileTasks(ctx, zipWriter, mu, fileMap, bar, tasks)
 		})
 	}
 }
 
 // processFileTasks 处理文件任务队列
-func processFileTasks(zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
+func processFileTasks(ctx context.Context, zipWriter *zip.Writer, mu *sync.Mutex, fileMap FileMap,
 	bar *progressbar.ProgressBar, tasks chan fileTask) {
 
 	for task := range tasks {
-		bar.Describe(fmt.Sprintf("备份 %s", filepath.Base(task.absPath)))
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			bar.Describe(fmt.Sprintf("备份 %s", filepath.Base(task.absPath)))
 
-		if err := processSingleFile(zipWriter, task, mu, fileMap); err != nil {
-			log.Printf("备份文件失败 (%s): %v", task.absPath, err)
-			bar.Describe(fmt.Sprintf("文件处理失败: %s", filepath.Base(task.absPath)))
+			if err := processSingleFile(zipWriter, task, mu, fileMap); err != nil {
+				log.Printf("备份文件失败 (%s): %v", task.absPath, err)
+				bar.Describe(fmt.Sprintf("文件处理失败: %s", filepath.Base(task.absPath)))
 
-			continue
+				continue
+			}
+
+			bar.Add(1)
 		}
-
-		bar.Add(1)
 	}
 }
 
@@ -197,10 +214,15 @@ func processSingleFile(zipWriter *zip.Writer, task fileTask, mu *sync.Mutex, fil
 }
 
 // processBackupPaths 处理所有备份路径
-func processBackupPaths(cfg *Config, tasks chan<- fileTask) {
+func processBackupPaths(ctx context.Context, cfg *Config, tasks chan<- fileTask) {
 	for _, path := range cfg.BackupPaths {
-		if err := processSinglePath(cfg, path, tasks); err != nil {
-			log.Printf("处理备份路径失败 (%s): %v", path, err)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := processSinglePath(cfg, path, tasks); err != nil {
+				log.Printf("处理备份路径失败 (%s): %v", path, err)
+			}
 		}
 	}
 }
