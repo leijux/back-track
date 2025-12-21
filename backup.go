@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -91,10 +90,6 @@ func backup(ctx context.Context, cfg *Config, configBytes []byte, outputPath str
 	}
 	defer outFile.Close()
 	defer zipWriter.Close()
-
-	zipWriter.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
-		return flate.NewWriter(w, flate.BestCompression)
-	})
 
 	var (
 		mu      sync.Mutex

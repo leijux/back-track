@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -69,10 +68,6 @@ func restore(ctx context.Context, zipPath string, rootDir string, backupBeforeRe
 		return fmt.Errorf("打开备份文件失败 (%s): %w", zipPath, err)
 	}
 	defer r.Close()
-
-	r.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
-		return flate.NewReader(r)
-	})
 
 	// 读取配置和文件映射
 	cfg, fileMap, err := readBackupMetadata(r.File)
