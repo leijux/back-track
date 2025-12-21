@@ -7,10 +7,12 @@ BackTrack 是一个用 Go 语言编写的高性能文件备份和还原工具，
 - **多路径备份**: 支持同时备份多个文件和目录
 - **智能排除**: 支持目录名称和文件模式排除规则
 - **服务管理**: 备份前自动暂停 systemd 服务，备份后自动恢复
+- **脚本执行**: 支持备份/还原前后执行自定义脚本
 - **高性能**: 并发处理文件，提高备份和还原效率
 - **进度显示**: 实时显示备份/还原进度条
 - **压缩存储**: 使用最佳压缩算法减少存储空间
 - **配置管理**: 支持 YAML 配置文件，易于管理和维护
+- **脚本管理**: 支持从配置文件或备份包单独执行脚本
 
 ## 🚀 快速开始
 
@@ -53,6 +55,16 @@ exclude_files:
 # 需要暂停的服务名称（systemd服务）
 service_names:
   - my_service         # 备份前暂停，备份后恢复
+
+# 前置脚本（在备份/还原前执行）
+before_script: |
+  echo "开始备份/还原操作"
+  # 可以在这里执行预处理操作，如停止服务、清理临时文件等
+
+# 后置脚本（在备份/还原后执行）
+after_script: |
+  echo "备份/还原操作完成"
+  # 可以在这里执行后处理操作，如启动服务、发送通知等
 ```
 
 ## 🔧 命令行参数
@@ -73,6 +85,64 @@ backtrack restore [flags]
 Flags:
   -i, --input string     备份文件路径 (必需)
   -r, --rootDir string   还原根目录 (默认 "/")
+  -b, --backup-before-restore   还原前备份，保留最近3个备份
+  -s, --script           执行脚本
+```
+
+### script 命令
+```bash
+backtrack script [flags]
+
+执行备份或还原的前置/后置脚本，支持从YAML配置文件或备份包中读取脚本。
+
+Flags:
+  -c, --config string    YAML配置文件路径
+  -i, --input string     备份文件路径
+  -t, --type string      脚本类型 (before|after) (默认 "before")
+
+示例:
+  # 从YAML配置文件执行前置脚本
+  backtrack script --type before --config config.yaml
+  
+  # 从备份包执行后置脚本
+  backtrack script --type after --input backup.zip
+```
+
+### config 命令
+```bash
+backtrack config [command]
+```
+
+管理备份包中的配置文件。支持从备份包导出配置，或将配置导入到备份包。
+
+#### export 子命令
+```bash
+backtrack config export [flags]
+
+从备份包导出配置文件。
+
+Flags:
+  -i, --input string    备份文件路径 (必需)
+  -o, --output string   导出的配置文件路径 (默认 "backup_config.yaml")
+
+示例:
+  # 从备份包导出配置
+  backtrack config export --input backup.zip --output my_config.yaml
+```
+
+#### import 子命令
+```bash
+backtrack config import [flags]
+
+将配置文件导入到备份包。
+
+Flags:
+  -i, --input string    备份文件路径 (必需)
+  -c, --config string   要导入的配置文件路径 (默认 "backup_config.yaml")
+
+示例:
+  # 将配置导入到备份包
+  backtrack config import --input backup.zip --config my_config.yaml
 ```
 
 ## 🏗️ 项目结构
@@ -82,7 +152,9 @@ back-track/
 ├── main.go          # 主程序入口
 ├── backup.go        # 备份功能实现
 ├── restore.go       # 还原功能实现
-├── service.go       # 服务管理功能
+├── script.go        # 脚本执行功能
+├── config.go        # 配置管理功能
+├── tools.go         # 工具函数
 ├── config.yaml      # 配置文件示例
 ├── go.mod          # Go 模块定义
 ├── Taskfile.yml    # 构建任务配置
