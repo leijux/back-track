@@ -12,10 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 const dataDirName = "data" // 备份数据目录名称
@@ -82,14 +82,15 @@ func backup(cfg *Config, configBytes []byte, outputPath string, quiet bool) erro
 	defer outFile.Close()
 	defer zipWriter.Close()
 
-	// 配置压缩算法
-	configureCompression(zipWriter)
+	zipWriter.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(w, flate.BestCompression)
+	})
 
 	var mu sync.Mutex
 	fileMap := make(FileMap)
 
 	// 写入配置文件到备份包
-	if err := writeConfigToZip(zipWriter, configBytes, &mu); err != nil {
+	if err := writeZipFile(zipWriter, "backup_config.yaml", configBytes, &mu); err != nil {
 		return err
 	}
 
@@ -103,7 +104,8 @@ func backup(cfg *Config, configBytes []byte, outputPath string, quiet bool) erro
 		return err
 	}
 
-	logBackupCompletion(outputPath)
+	fmt.Printf("\n备份完成: %s ", outputPath)
+	fmt.Printf("跳过 %d个文件 %d个文件夹\n", skippedFiles.Load(), skippedDirs.Load())
 	return nil
 }
 
@@ -121,18 +123,6 @@ func createBackupFile(outputPath string) (*zip.Writer, *os.File, error) {
 	}
 
 	return zip.NewWriter(outFile), outFile, nil
-}
-
-// configureCompression 配置压缩算法
-func configureCompression(zipWriter *zip.Writer) {
-	zipWriter.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
-		return flate.NewWriter(w, flate.BestCompression)
-	})
-}
-
-// writeConfigToZip 将配置文件写入zip
-func writeConfigToZip(zipWriter *zip.Writer, configBytes []byte, mu *sync.Mutex) error {
-	return writeZipFile(zipWriter, "backup_config.yaml", configBytes, mu)
 }
 
 // processBackupFiles 处理文件备份过程
@@ -255,12 +245,6 @@ func writeFileMapToZip(zipWriter *zip.Writer, fileMap FileMap, mu *sync.Mutex) e
 		return fmt.Errorf("序列化文件映射失败: %w", err)
 	}
 	return writeZipFile(zipWriter, "file_map.yaml", mapBytes, mu)
-}
-
-// logBackupCompletion 记录备份完成信息
-func logBackupCompletion(outputPath string) {
-	fmt.Printf("\n备份完成: %s ", outputPath)
-	fmt.Printf("跳过 %d个文件 %d个文件夹\n", skippedFiles.Load(), skippedDirs.Load())
 }
 
 // walkDirAndPushTasks 遍历目录并将文件任务推送到通道

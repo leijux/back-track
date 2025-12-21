@@ -11,10 +11,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/goccy/go-yaml"
+	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/yaml.v3"
 )
 
 const retainBackupCount = 3 // 保留的还原前备份数量
@@ -39,10 +40,10 @@ var restoreCmd = &cobra.Command{
 		inputPath, _ := cmd.Flags().GetString("input")
 		rootDir, _ := cmd.Flags().GetString("root-dir")
 		backupBeforeRestore, _ := cmd.Flags().GetBool("backup-before-restore")
-		noScripts, _ := cmd.Flags().GetBool("no-scripts")
+		script, _ := cmd.Flags().GetBool("script")
 		quiet, _ := cmd.Flags().GetBool("quiet")
 
-		if err := restore(inputPath, rootDir, backupBeforeRestore, noScripts, quiet); err != nil {
+		if err := restore(inputPath, rootDir, backupBeforeRestore, script, quiet); err != nil {
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -54,19 +55,23 @@ func init() {
 	restoreCmd.Flags().StringP("input", "i", "", "指定待还原文件")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原前备份，保留最近3个备份")
-	restoreCmd.Flags().BoolP("no-scripts", "s", false, "还原时不执行脚本")
+	restoreCmd.Flags().BoolP("script", "s", false, "执行脚本")
 
 	rootCmd.AddCommand(restoreCmd)
 }
 
 // restore 执行还原操作
-func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, quiet bool) error {
+func restore(zipPath string, rootDir string, backupBeforeRestore, script, quiet bool) error {
 	// 打开备份文件
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return fmt.Errorf("打开备份文件失败 (%s): %w", zipPath, err)
 	}
 	defer r.Close()
+
+	r.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
+		return flate.NewReader(r)
+	})
 
 	// 读取配置和文件映射
 	cfg, fileMap, err := readBackupMetadata(r.File)
@@ -87,7 +92,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 	}
 
 	// 执行还原前脚本
-	if cfg.BeforeScript != "" && !noScripts {
+	if script && cfg.BeforeScript != "" {
 		result, err := runCommand("sh", "-c", cfg.BeforeScript)
 		if err != nil {
 			return fmt.Errorf("执行还原前脚本失败: %w", err)
@@ -112,7 +117,7 @@ func restore(zipPath string, rootDir string, backupBeforeRestore, noScripts, qui
 	bar.Describe("还原完成")
 
 	// 执行还原后脚本
-	if cfg.AfterScript != "" && !noScripts {
+	if script && cfg.AfterScript != "" {
 		result, err := runCommand("sh", "-c", cfg.AfterScript)
 		if err != nil {
 			return fmt.Errorf("执行还原后脚本失败: %w", err)
