@@ -71,7 +71,7 @@ func exportConfigFromBackup(zipPath, outputPath string) error {
 	// 查找配置文件
 	var configData []byte
 	for _, f := range r.File {
-		if f.Name == "backupConfigName" {
+		if f.Name == backupConfigName {
 			rc, err := f.Open()
 			if err != nil {
 				return fmt.Errorf("打开配置文件失败: %w", err)
