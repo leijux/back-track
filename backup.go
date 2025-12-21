@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -379,11 +380,23 @@ func addFileToZip(zipWriter *zip.Writer, filePath, relPath string, mu *sync.Mute
 		return fmt.Errorf("打开文件失败 (%s): %w", filePath, err)
 	}
 	defer srcFile.Close()
+	var method uint16
+
+	// 根据文件扩展名选择压缩方法
+	switch {
+	case !strings.Contains(relPath, "."), strings.HasSuffix(relPath, ".gz"):
+		method = zip.Store // 不压缩
+	default:
+		method = zip.Deflate // 默认压缩
+	}
 
 	mu.Lock()
 	defer mu.Unlock()
 
-	writer, err := zipWriter.Create(relPath)
+	writer, err := zipWriter.CreateHeader(&zip.FileHeader{
+		Name:   relPath,
+		Method: method,
+	})
 	if err != nil {
 		return fmt.Errorf("创建zip条目失败 (%s): %w", relPath, err)
 	}
