@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	dataDirName      = "data" // 备份数据目录名称
-	backupConfigName = "backup_config.yaml"
+	backupDataDirName = "data" // 备份数据目录名称
+	backupConfigName  = "backup_config.yaml"
+	backupFileMapName = "file_map.yaml"
 )
 
 var backupCmd = &cobra.Command{
@@ -256,7 +257,7 @@ func processSingleFileTask(cfg *Config, path string, info os.FileInfo, tasks cha
 
 	tasks <- fileTask{
 		absPath: absPath,
-		relPath: filepath.Join(dataDirName, filepath.Base(path)),
+		relPath: filepath.Join(backupDataDirName, filepath.Base(path)),
 	}
 	return nil
 }
@@ -267,7 +268,7 @@ func writeFileMapToZip(zipWriter *zip.Writer, fileMap FileMap, mu *sync.Mutex) e
 	if err != nil {
 		return fmt.Errorf("序列化文件映射失败: %w", err)
 	}
-	return writeZipFile(zipWriter, "file_map.yaml", mapBytes, mu)
+	return writeZipFile(zipWriter, backupFileMapName, mapBytes, mu)
 }
 
 // walkDirAndPushTasks 遍历目录并将文件任务推送到通道
@@ -301,7 +302,7 @@ func walkDirAndPushTasks(cfg *Config, dirPath string, tasks chan<- fileTask) err
 				return fmt.Errorf("获取绝对路径失败 (%s): %w", path, err)
 			}
 
-			relPath := filepath.Join(dataDirName, filepath.Base(dirPath), filepath.ToSlash(rel))
+			relPath := filepath.Join(backupDataDirName, filepath.Base(dirPath), filepath.ToSlash(rel))
 			tasks <- fileTask{absPath: absPath, relPath: relPath}
 		}
 		return nil

@@ -111,7 +111,7 @@ func restore(ctx context.Context, zipPath string, rootDir string, backupBeforeRe
 	bar := newProgressBar(int64(len(filesToRestore)), quiet, "正在还原")
 
 	// 并发还原文件
-	if err := restoreFilesConcurrently(filesToRestore, fileMap, bar); err != nil {
+	if err := restoreFilesConcurrently(ctx, filesToRestore, fileMap, bar); err != nil {
 		return err
 	}
 
@@ -138,12 +138,12 @@ func readBackupMetadata(files []*zip.File) (*Config, FileMap, error) {
 		return nil, nil, fmt.Errorf("读取 %s 失败: %w", backupConfigName, err)
 	}
 
-	if err := readYAMLFromZip(files, "file_map.yaml", &fileMap); err != nil {
-		return nil, nil, fmt.Errorf("读取 file_map.yaml 失败: %w", err)
+	if err := readYAMLFromZip(files, backupFileMapName, &fileMap); err != nil {
+		return nil, nil, fmt.Errorf("读取 %s 失败: %w", backupFileMapName, err)
 	}
 
 	if len(fileMap) == 0 {
-		return nil, nil, fmt.Errorf("备份文件缺少 file_map.yaml，无法还原")
+		return nil, nil, fmt.Errorf("备份文件缺少 %s，无法还原", backupFileMapName)
 	}
 
 	return &cfg, fileMap, nil
@@ -153,7 +153,7 @@ func readBackupMetadata(files []*zip.File) (*Config, FileMap, error) {
 func getFilesToRestore(files []*zip.File) []*zip.File {
 	filesToRestore := make([]*zip.File, 0, len(files))
 	for _, f := range files {
-		if f.Name != backupConfigName && f.Name != "file_map.yaml" {
+		if f.Name != backupConfigName && f.Name != backupFileMapName {
 			filesToRestore = append(filesToRestore, f)
 		}
 	}
@@ -161,8 +161,8 @@ func getFilesToRestore(files []*zip.File) []*zip.File {
 }
 
 // restoreFilesConcurrently 并发还原文件
-func restoreFilesConcurrently(filesToRestore []*zip.File, fileMap FileMap, bar *progressbar.ProgressBar) error {
-	g := new(errgroup.Group)
+func restoreFilesConcurrently(ctx context.Context, filesToRestore []*zip.File, fileMap FileMap, bar *progressbar.ProgressBar) error {
+	g, _ := errgroup.WithContext(ctx)
 	sem := make(chan struct{}, runtime.NumCPU()) // 限制并发量
 
 	for _, f := range filesToRestore {
