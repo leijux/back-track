@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/goccy/go-yaml"
+	"github.com/klauspost/compress/flate"
 	"github.com/spf13/cobra"
 )
 
@@ -62,6 +63,10 @@ func exportConfigFromBackup(zipPath, outputPath string) error {
 		return fmt.Errorf("打开备份文件失败 (%s): %w", zipPath, err)
 	}
 	defer r.Close()
+
+	r.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
+		return flate.NewReader(r)
+	})
 
 	// 查找配置文件
 	var configData []byte
@@ -132,6 +137,10 @@ func updateZipFile(srcPath, dstPath string, newConfigData []byte) error {
 	}
 	defer srcZip.Close()
 
+	srcZip.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
+		return flate.NewReader(r)
+	})
+
 	// 创建目标zip文件
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
@@ -141,6 +150,10 @@ func updateZipFile(srcPath, dstPath string, newConfigData []byte) error {
 
 	dstZip := zip.NewWriter(dstFile)
 	defer dstZip.Close()
+
+	dstZip.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(w, flate.BestCompression)
+	})
 
 	// 复制所有文件，替换配置文件
 	configUpdated := false

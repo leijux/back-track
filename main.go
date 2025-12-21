@@ -17,16 +17,13 @@
 package main
 
 import (
-	"archive/zip"
 	"context"
-	"io"
 	"log"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"syscall"
 
-	"github.com/klauspost/compress/flate"
 	"github.com/spf13/cobra"
 )
 
@@ -42,14 +39,6 @@ func init() {
 
 	rootCmd.Version = debugInfo.Main.Version
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "静默模式，不输出日志")
-
-	zip.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
-		return flate.NewReader(r)
-	})
-
-	zip.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
-		return flate.NewWriter(w, flate.BestCompression)
-	})
 }
 
 func main() {

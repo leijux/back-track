@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/klauspost/compress/flate"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -68,6 +69,10 @@ func restore(ctx context.Context, zipPath string, rootDir string, backupBeforeRe
 		return fmt.Errorf("打开备份文件失败 (%s): %w", zipPath, err)
 	}
 	defer r.Close()
+
+	r.RegisterDecompressor(zip.Deflate, func(r io.Reader) io.ReadCloser {
+		return flate.NewReader(r)
+	})
 
 	// 读取配置和文件映射
 	cfg, fileMap, err := readBackupMetadata(r.File)
@@ -129,8 +134,8 @@ func readBackupMetadata(files []*zip.File) (*Config, FileMap, error) {
 	var cfg Config
 	var fileMap FileMap
 
-	if err := readYAMLFromZip(files, "backup_config.yaml", &cfg); err != nil {
-		return nil, nil, fmt.Errorf("读取 backup_config.yaml 失败: %w", err)
+	if err := readYAMLFromZip(files, backupConfigName, &cfg); err != nil {
+		return nil, nil, fmt.Errorf("读取 %s 失败: %w", backupConfigName, err)
 	}
 
 	if err := readYAMLFromZip(files, "file_map.yaml", &fileMap); err != nil {
@@ -148,7 +153,7 @@ func readBackupMetadata(files []*zip.File) (*Config, FileMap, error) {
 func getFilesToRestore(files []*zip.File) []*zip.File {
 	filesToRestore := make([]*zip.File, 0, len(files))
 	for _, f := range files {
-		if f.Name != "backup_config.yaml" && f.Name != "file_map.yaml" {
+		if f.Name != backupConfigName && f.Name != "file_map.yaml" {
 			filesToRestore = append(filesToRestore, f)
 		}
 	}
