@@ -56,7 +56,7 @@ func init() {
 	restoreCmd.Flags().StringP("input", "i", "", "指定待还原文件")
 	restoreCmd.Flags().StringP("root-dir", "r", "/", "还原根目录")
 	restoreCmd.Flags().BoolP("backup-before-restore", "b", false, "还原前备份，保留最近3个备份")
-	restoreCmd.Flags().BoolP("script", "s", false, "执行脚本")
+	restoreCmd.Flags().BoolP("script", "s", true, "执行脚本")
 
 	rootCmd.AddCommand(restoreCmd)
 }
