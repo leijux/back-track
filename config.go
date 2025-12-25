@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -165,7 +166,10 @@ func updateZipFile(srcPath, configName string, newConfigData []byte) error {
 	})
 
 	// 复制所有文件，替换配置文件
-	configUpdated := false
+	if !slices.ContainsFunc(srcZip.File, func(f *zip.File) bool { return f.Name == configName }) {
+		return fmt.Errorf("备份文件中未找到 %s", configName)
+	}
+
 	for _, f := range srcZip.File {
 		if f.Name == configName {
 			// 写入新的配置文件
@@ -176,17 +180,12 @@ func updateZipFile(srcPath, configName string, newConfigData []byte) error {
 			if _, err := w.Write(newConfigData); err != nil {
 				return fmt.Errorf("写入配置文件失败: %w", err)
 			}
-			configUpdated = true
 		} else {
 			// 复制其他文件
 			if err := copyZipFile(f, dstZip); err != nil {
 				return fmt.Errorf("复制文件失败 (%s): %w", f.Name, err)
 			}
 		}
-	}
-
-	if !configUpdated {
-		return fmt.Errorf("备份文件中未找到 %s", configName)
 	}
 
 	// 替换原文件
