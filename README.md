@@ -1,12 +1,11 @@
 # BackTrack - 文件备份和还原工具
 
-BackTrack 是一个用 Go 语言编写的高性能文件备份和还原工具，支持多路径备份、文件排除、服务暂停恢复等功能。
+BackTrack 是一个用 Go 语言编写的高性能文件备份和还原工具，支持多路径备份、文件排除等功能。
 
 ## ✨ 功能特性
 
 - **多路径备份**: 支持同时备份多个文件和目录
 - **智能排除**: 支持目录名称和文件模式排除规则
-- **服务管理**: 备份前自动暂停 systemd 服务，备份后自动恢复
 - **脚本执行**: 支持备份/还原前后执行自定义脚本
 - **高性能**: 并发处理文件，提高备份和还原效率
 - **进度显示**: 实时显示备份/还原进度条
@@ -52,10 +51,6 @@ exclude_files:
   - "*.log"            # 排除所有.log文件
   - "*.tmp"            # 排除所有.tmp文件
 
-# 需要暂停的服务名称（systemd服务）
-service_names:
-  - my_service         # 备份前暂停，备份后恢复
-
 # 前置脚本（在备份/还原前执行）
 before_script: |
   echo "开始备份/还原操作"
@@ -68,6 +63,13 @@ after_script: |
 ```
 
 ## 🔧 命令行参数
+
+### 全局参数
+以下参数适用于所有命令：
+
+```bash
+  -q, --quiet     静默模式，不输出日志
+```
 
 ### backup 命令
 ```bash
@@ -84,9 +86,9 @@ backtrack restore [flags]
 
 Flags:
   -i, --input string     备份文件路径 (必需)
-  -r, --rootDir string   还原根目录 (默认 "/")
+  -r, --root-dir string  还原根目录 (默认 "/")
   -b, --backup-before-restore   还原前备份，保留最近3个备份
-  -s, --script           执行脚本
+  -s, --script           执行脚本 (默认 true)
 ```
 
 ### script 命令
@@ -110,10 +112,21 @@ Flags:
 
 ### config 命令
 ```bash
+backtrack config [flags]
 backtrack config [command]
 ```
 
-管理备份包中的配置文件。支持从备份包导出配置，或将配置导入到备份包。
+管理备份包中的配置文件。支持查看、导出和导入备份包中的配置文件。
+
+```bash
+Flags:
+  -b, --backup-config string   备份文件路径
+  -v, --view-config string     要查看的配置文件名称(backup_config.yaml, file_map.yaml) (默认 "backup_config.yaml")
+
+可用子命令:
+  export      从备份包导出配置
+  import      导入配置到备份包
+```
 
 #### export 子命令
 ```bash
@@ -122,12 +135,12 @@ backtrack config export [flags]
 从备份包导出配置文件。
 
 Flags:
-  -i, --input string    备份文件路径 (必需)
-  -o, --output string   导出的配置文件路径 (默认 "backup_config.yaml")
+  -c, --config string   要导出的配置文件名称(backup_config.yaml, file_map.yaml) (默认 "backup_config.yaml")
+  -o, --output string   导出的配置文件路径
 
 示例:
   # 从备份包导出配置
-  backtrack config export --input backup.zip --output my_config.yaml
+  backtrack config export --backup-config backup.zip --config backup_config.yaml --output my_config.yaml
 ```
 
 #### import 子命令
@@ -137,12 +150,13 @@ backtrack config import [flags]
 将配置文件导入到备份包。
 
 Flags:
-  -i, --input string    备份文件路径 (必需)
-  -c, --config string   要导入的配置文件路径 (默认 "backup_config.yaml")
+  -c, --config string   要替换的配置文件名称(backup_config.yaml, file_map.yaml) (默认 "backup_config.yaml")
+  -i, --import string   要导入的配置文件路径
+  -f, --force           强制替换
 
 示例:
   # 将配置导入到备份包
-  backtrack config import --input backup.zip --config my_config.yaml
+  backtrack config import --backup-config backup.zip --config backup_config.yaml --import my_config.yaml
 ```
 
 ## 🏗️ 项目结构
