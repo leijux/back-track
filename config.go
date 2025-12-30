@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -69,8 +70,9 @@ var configImportCmd = &cobra.Command{
 		importConfig, _ := cmd.Flags().GetString("config")
 		configPath, _ := cmd.Flags().GetString("import")
 		force, _ := cmd.Flags().GetBool("force")
+		quiet, _ := cmd.Flags().GetBool("quiet")
 
-		return importConfigToBackup(backupConfigPath, importConfig, configPath, force)
+		return importConfigToBackup(cmd.Context(), backupConfigPath, importConfig, configPath, force, quiet)
 	},
 }
 
@@ -107,7 +109,7 @@ func exportConfigFromBackup(zipPath, configName, outputPath string) error {
 }
 
 // importConfigToBackup 导入配置到备份包
-func importConfigToBackup(zipPath, configName, configPath string, force bool) error {
+func importConfigToBackup(ctx context.Context, zipPath, configName, configPath string, force, quiet bool) error {
 	// 读取配置文件
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
@@ -129,7 +131,7 @@ func importConfigToBackup(zipPath, configName, configPath string, force bool) er
 		}
 	}
 
-	if err := updateZipFile(zipPath, configName, configData); err != nil {
+	if err := updateZipFile(ctx, zipPath, configName, configData, quiet); err != nil {
 		return fmt.Errorf("更新备份文件失败: %w", err)
 	}
 
@@ -138,7 +140,7 @@ func importConfigToBackup(zipPath, configName, configPath string, force bool) er
 }
 
 // updateZipFile 更新zip文件中的配置文件
-func updateZipFile(srcPath, configName string, newConfigData []byte) error {
+func updateZipFile(ctx context.Context, srcPath, configName string, newConfigData []byte, quiet bool) error {
 	// 打开源zip文件
 	srcZip, err := zip.OpenReader(srcPath)
 	if err != nil {
@@ -151,7 +153,7 @@ func updateZipFile(srcPath, configName string, newConfigData []byte) error {
 	})
 
 	// 创建目标zip文件
-	tempZip, err := os.CreateTemp("", srcPath+".tmp")
+	tempZip, err := os.CreateTemp("", filepath.Base(srcPath)+".tmp")
 	if err != nil {
 		return fmt.Errorf("创建目标备份文件失败: %w", err)
 	}
@@ -170,21 +172,31 @@ func updateZipFile(srcPath, configName string, newConfigData []byte) error {
 		return fmt.Errorf("备份文件中未找到 %s", configName)
 	}
 
+	bar := newProgressBar(int64(len(srcZip.File)), quiet, "正在更新备份文件...")
+
 	for _, f := range srcZip.File {
-		if f.Name == configName {
-			// 写入新的配置文件
-			w, err := dstZip.Create(f.Name)
-			if err != nil {
-				return fmt.Errorf("创建zip条目失败: %w", err)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			bar.Describe("更新文件: " + f.Name)
+			if f.Name == configName {
+				// 写入新的配置文件
+				w, err := dstZip.Create(f.Name)
+				if err != nil {
+					return fmt.Errorf("创建zip条目失败: %w", err)
+				}
+				if _, err := w.Write(newConfigData); err != nil {
+					return fmt.Errorf("写入配置文件失败: %w", err)
+				}
+			} else {
+				// 复制其他文件
+				if err := copyZipFile(f, dstZip); err != nil {
+					return fmt.Errorf("复制文件失败 (%s): %w", f.Name, err)
+				}
 			}
-			if _, err := w.Write(newConfigData); err != nil {
-				return fmt.Errorf("写入配置文件失败: %w", err)
-			}
-		} else {
-			// 复制其他文件
-			if err := copyZipFile(f, dstZip); err != nil {
-				return fmt.Errorf("复制文件失败 (%s): %w", f.Name, err)
-			}
+
+			bar.Add(1)
 		}
 	}
 
